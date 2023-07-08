@@ -85,14 +85,29 @@ function next() {
 			let seed = parseInt(randomNum(1,10));
 			if ((val1 + val2) > 100){
 				$(".middleVal").text("-");
-				lastVal = val1 - val2;
+				// 如果val1个位数 > val2个位数，这有点简单，要复杂点
+				if ((val1 % 10) >= (val2 % 10)){
+					next()
+				}else {
+					lastVal = val1 - val2;
+				}
 			} else {
 				if (seed > 5) {
-					$(".middleVal").text("-");;
-					lastVal = val1 - val2;
+					$(".middleVal").text("-");
+					// 如果val1个位数 > val2个位数，这有点简单，要复杂点
+					if ((val1 % 10) >= (val2 % 10)){
+						next()
+					}else {
+						lastVal = val1 - val2;
+					}
 				} else {
-					$(".middleVal").text("+");;
-					lastVal = val1 + val2;
+					$(".middleVal").text("+");
+					// 如果val1个位数 + val2个位数 <= 10，这有点简单，要复杂点
+					if ((val1 % 10) + (val2 % 10) <= 10){
+						next()
+					}else {
+						lastVal = val1 + val2;
+					}
 				}
 			}
 		} else if (val1 < val2) {
@@ -101,10 +116,20 @@ function next() {
 			$(".rightVal").text(val1);
 			if ((val1 + val2) > 100) {
 				$(".middleVal").text("-");
-				lastVal = val2 - val1;
+				// 如果val2个位数 > val1个位数，这有点简单，要复杂点
+				if ((val2 % 10) >= (val1 % 10)){
+					next()
+				}else {
+					lastVal = val2 - val1;
+				}
 			} else {
 				$(".middleVal").text("+");
-				lastVal = val1 + val2;
+				// 如果val1个位数 + val2个位数 <= 10，这有点简单，要复杂点
+				if ((val1 % 10) + (val2 % 10) <= 10){
+					next()
+				}else {
+					lastVal = val1 + val2;
+				}
 			}
 		} else {
 			next()
