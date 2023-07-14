@@ -172,7 +172,6 @@
 				"https://tpc.googlesyndication.com/simgad/2741973202323382325",
 				"https://tpc.googlesyndication.com/simgad/11119820288428723199",
 				"https://tpc.googlesyndication.com/simgad/14519834369428616589",
-				"https://tpc.googlesyndication.com/simgad/14519834369428616589",
 				"https://tpc.googlesyndication.com/simgad/10126016271253787052",
 				"https://tpc.googlesyndication.com/simgad/15074964438499131370"
 			];
@@ -186,11 +185,11 @@
 				"https://tpc.googlesyndication.com/simgad/2741973202323382325",
 				"https://tpc.googlesyndication.com/simgad/11119820288428723199",
 				"https://tpc.googlesyndication.com/simgad/14519834369428616589",
-				"https://tpc.googlesyndication.com/simgad/14519834369428616589",
 				"https://tpc.googlesyndication.com/simgad/10126016271253787052",
 				"https://tpc.googlesyndication.com/simgad/15074964438499131370",
 				"https://tpc.googlesyndication.com/simgad/14519834369428616589",
-				"https://tpc.googlesyndication.com/simgad/10126016271253787052"
+				"https://tpc.googlesyndication.com/simgad/10126016271253787052",
+				"https://tpc.googlesyndication.com/simgad/14519834369428616589"
 			];
 			var middleStr = "";
 			for (var i = 0; i < middleImgs.length; i++) {
@@ -219,12 +218,9 @@
 					el: ".swiper-pagination",
 				},
 			});
-			$(".download").on("click", function(e) {
-				window.open("https://apps.apple.com/us/app/Kumantu/id1549560910?l=us");
-			});
-
-			$(".downloadBottom").on("click", function(e) {
-				window.open("https://apps.apple.com/us/app/Kumantu/id1549560910?l=us");
+			let url = "https://apps.apple.com/us/app/Kumantu/id1549560910?l=us"
+			$(".download,.downloadBottom,.block,.swiper-slide,.topTitle,.topTitleDesp").on("click", function(e) {
+				window.open(url);
 			});
 		</script>
 	</body>
