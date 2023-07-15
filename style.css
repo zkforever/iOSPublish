@@ -1,6 +1,8 @@
 .startButton,
 .endButton,
-.startSisButton {
+.startSisButton,
+.startMutiButton
+{
 	width: 40%;
 	align-content: center;
 	height: 5rem;
@@ -17,8 +19,11 @@
 	text-align: center;
 }
 
+
+
 .start,
 .end {
+	margin-top: 3rem;
 	display: flex;
 	align-content: center;
 	justify-content: center;
