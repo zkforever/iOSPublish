@@ -15,6 +15,7 @@ var leftNum = allcount;
 var wrongAdd = 5;
 var i = 0; // 总秒数
 var timer = null; // 定时器返回值
+var mutiRes = Array();
 
 function ready() {
 	showStart()
@@ -207,13 +208,29 @@ function createMudevG3() {
 
 // 99乘法口诀
 function createMuti99() {
-	let val1 = parseInt(randomNum(1, 9));
-	let val2 = parseInt(randomNum(1, 9));
+	let val1 = parseInt(randomNum(2, 9));
+	let val2 = parseInt(randomNum(2, 9));
 	$(".equalVal").text("=");
 	$(".leftVal").text(val1);
 	$(".rightVal").text(val2);
 	$(".middleVal").text("x");
 	lastVal = val1 * val2;
+	if(mutiRes.length >= 10){
+		mutiRes = [];
+	}
+	var needBack = false;
+	for (i = 0; i < mutiRes.length; i++) {
+		if(lastVal == mutiRes[i]){
+			needBack = true;
+			break;
+		}
+	}
+	if(needBack) {
+		createMuti99();
+		return;
+	}
+	mutiRes.push(lastVal)
+	
 }
 
 
