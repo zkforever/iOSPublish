@@ -3,16 +3,17 @@ document.addEventListener("DOMContentLoaded", ready);
 const CacuType = {
 	plusIn100: "plusIn100", // 100以内乘除法
 	mudevG3: "mudevG3",  // 三年级乘除法
+	mudevG4: "mudevG4",  // 四年级乘除法
 	mu99: "mu99"   // 99乘法口诀
 }
 
 var cacluType = CacuType.plusIn100;
 var lastVal = -1;
-var allcount = 10;
+var allcount = 20;
 var rightNum = 0;
 var wrongNum = 0;
 var leftNum = allcount;
-var wrongAdd = 5;
+var wrongAdd = 10;
 var i = 0; // 总秒数
 var timer = null; // 定时器返回值
 var mutiRes = Array();
@@ -33,6 +34,17 @@ function ready() {
 	$(".startSisButton").on("click", function(e) {
 		$(".start").hide()
 		cacluType = CacuType.mudevG3
+		$(".computer").show()
+		$(".end").show()
+		$("#box").show()
+		startFunc()
+		next()
+		showInfo()
+	})
+	
+	$(".startSis4Button").on("click", function(e) {
+		$(".start").hide()
+		cacluType = CacuType.mudevG4
 		$(".computer").show()
 		$(".end").show()
 		$("#box").show()
@@ -206,6 +218,39 @@ function createMudevG3() {
 	}
 }
 
+// 四年级乘除法
+function createMudevG4() {
+	var val1 = parseInt(randomNum(10, 1000));
+	var val2 = parseInt(randomNum(10, 100));
+	$(".equalVal").text("=");
+	let seed = parseInt(randomNum(1, 10));
+	$(".leftVal").text(val1);
+	$(".rightVal").text(val2);
+	if (seed > 5) {
+		let a = val1 * val2;
+		if (a < 100000) {
+			$(".middleVal").text("x");
+			lastVal = val1 * val2;
+		} else {
+			createMudevG4()
+		}
+		
+	} else {
+		// 除法
+		val1 = parseInt(randomNum(100, 1000));
+		val2 = parseInt(randomNum(2, 10));
+		let all = val1 * val2;
+		if (all < 1000) {
+			$(".leftVal").text(all);
+			$(".middleVal").text("÷");
+			$(".rightVal").text(val2);
+			lastVal = val1;
+		} else {
+			createMudevG4()
+		}
+	}
+}
+
 // 99乘法口诀
 function createMuti99() {
 	let val1 = parseInt(randomNum(2, 9));
@@ -239,6 +284,8 @@ function next() {
 		createPlus100()
 	}else if (cacluType == CacuType.mudevG3){
 		createMudevG3()
+	}else if (cacluType == CacuType.mudevG4){
+		createMudevG4()
 	}else if (cacluType == CacuType.mu99){
 		createMuti99()
 	}
