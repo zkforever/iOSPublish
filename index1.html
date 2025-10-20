@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<script src="jquery.js"></script>
+	<script src="main.js"></script>
+	<link rel="stylesheet" type="text/css" href="style.css" />
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+	</head>
+	<body>
+		<h1 class="titleC"></h1>
+		<div class="start">
+			<button class="startButton ll">100以内加减法，开始</button>
+			<button class="startSisButton ll">三年级乘除法，开始</button>
+		</div>
+		<div class="start">
+			<button class="startSis4Button ll">四年级乘除法，开始</button>
+			<button class="startMutiButton ll">99乘法口诀，开始</button>
+		</div>
+		<div class="computer" style="display: none;">
+			<div class="leftVal"></div>
+			<div class="middleVal"></div>
+			<div class="rightVal"></div>
+			<div class="equalVal"></div>
+			<div class="lastVal"><input type="number" id="lastNumVal" /></div>
+		</div>
+		<div class="end" style="display: none;"><button class="endButton">下一个</button></div>
+		<div class="info"></div>
+
+		<div id="box" style="display: none;">
+			<span>用时：</span>
+			<span id="min">00</span>
+			<span>:</span>
+			<span id="sec">00</span>
+			<br>
+		</div>
+	</body>
+</html>

@@ -1,38 +1,1300 @@
 <!DOCTYPE html>
-<html>
-	<script src="jquery.js"></script>
-	<script src="main.js"></script>
-	<link rel="stylesheet" type="text/css" href="style.css" />
-	<head>
-		<meta charset="utf-8">
-		<title></title>
-	</head>
-	<body>
-		<h1 class="titleC"></h1>
-		<div class="start">
-			<button class="startButton ll">100以内加减法，开始</button>
-			<button class="startSisButton ll">三年级乘除法，开始</button>
-		</div>
-		<div class="start">
-			<button class="startSis4Button ll">四年级乘除法，开始</button>
-			<button class="startMutiButton ll">99乘法口诀，开始</button>
-		</div>
-		<div class="computer" style="display: none;">
-			<div class="leftVal"></div>
-			<div class="middleVal"></div>
-			<div class="rightVal"></div>
-			<div class="equalVal"></div>
-			<div class="lastVal"><input type="number" id="lastNumVal" /></div>
-		</div>
-		<div class="end" style="display: none;"><button class="endButton">下一个</button></div>
-		<div class="info"></div>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小学生计算练习</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 5px;
+            vertical-align: middle;
+        }
+        .fraction-top {
+            border-bottom: 2px solid #333;
+            padding: 0 5px 2px 5px;
+        }
+        .fraction-bottom {
+            padding: 2px 5px 0 5px;
+        }
+        .input-fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 5px;
+            vertical-align: middle;
+        }
+        .input-fraction input {
+            width: 60px;
+            text-align: center;
+        }
+        .input-fraction hr {
+            width: 60px;
+            margin: 2px 0;
+            border: none;
+            border-top: 2px solid #333;
+        }
+        .settings-panel, .wrong-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            margin: 0;
+            padding: 0;
+        }
+        .settings-panel.active, .wrong-panel.active {
+            max-height: 700px;
+            padding: 4px;
+        }
+        .floating-settings-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .floating-settings-btn:hover {
+            transform: scale(1.1);
+        }
+        .floating-settings-panel {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 99;
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .floating-settings-panel.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen p-5">
+    <!-- 浮动错题本按钮 -->
+    <button id="floatingWrongBtn" class="floating-settings-btn bg-red-500 text-white hover:bg-red-600 transition-all" style="bottom: 80px;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span id="floatingWrongCount" class="absolute -top-1 -right-1 bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">0</span>
+    </button>
+    
+    <!-- 浮动设置按钮 -->
+    <button id="floatingSettingsBtn" class="floating-settings-btn bg-purple-500 text-white hover:bg-purple-600 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    </button>
+    
+    <!-- 浮动错题本面板 -->
+    <div id="floatingWrongPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
+        <h3 class="font-bold text-lg text-center text-red-700 mb-3">错题本</h3>
+        <div id="floatingWrongList" class="max-h-60 overflow-y-auto">
+            <p class="text-center text-gray-500 italic">暂无错题</p>
+        </div>
+        <div class="text-center mt-3">
+            <button id="floatingClearWrongBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all">
+                清空错题本
+            </button>
+        </div>
+    </div>
+    
+    <!-- 浮动设置面板 -->
+    <div id="floatingSettingsPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
+        <h3 class="font-bold text-lg text-center text-purple-700 mb-3">设置</h3>
+        <div class="grid grid-cols-1 gap-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">数字最小值</label>
+                <input type="number" id="floatingMinValue" value="0" min="0" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">数字最大值</label>
+                <input type="number" id="floatingMaxValue" value="10" min="1" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">结果最大值</label>
+                <input type="number" id="floatingResultMaxValue" value="100" min="1" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">长式子最短长度</label>
+                <input type="number" id="floatingMinLength" value="5" min="2" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">长式子最长长度</label>
+                <input type="number" id="floatingMaxLength" value="8" min="5" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <input type="checkbox" id="floatingAllowNegative" value="1" 
+                           class="w-5 h-5 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                    <span>允许出现负数</span>
+                </label>
+            </div>
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <input type="checkbox" id="floatingAllowRemainder" value="1" 
+                           class="w-5 h-5 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                    <span>允许除法有余数</span>
+                </label>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-3 mt-2">
+                <h4 class="font-medium text-gray-700 mb-2">题型选择</h4>
+                <div class="mb-2">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeAll" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>全选</span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeSimple" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>基础计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeLong" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>长式子</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeBig" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>大数计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeFraction" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>分式计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeEquation" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>方程计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeStep" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>脱式计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeWrong" value="1" 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错题练习</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <button id="floatingSaveSettingsBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="max-w-4xl mx-auto flex flex-col gap-5">
+        <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20">
+            <h1 class="text-3xl font-bold text-center bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-4">计算小能手</h1>
+            
+            <!-- 只保留进度和得分 -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg font-semibold text-gray-700">进度:</span>
+                    <span class="text-lg font-semibold text-blue-600" id="progress">0/10</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-lg font-semibold text-gray-700">得分:</span>
+                    <span class="text-lg font-semibold text-purple-600" id="score">0</span>
+                </div>
+            </div>
+        </div>
 
-		<div id="box" style="display: none;">
-			<span>用时：</span>
-			<span id="min">00</span>
-			<span>:</span>
-			<span id="sec">00</span>
-			<br>
-		</div>
-	</body>
+        <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20 flex-grow flex flex-col">
+            <div class="text-center mb-6">
+                <div class="text-4xl font-bold text-gray-800 mb-2" id="problem"></div>
+                <div class="text-lg text-gray-500" id="problemType"></div>
+            </div>
+            
+            <div class="flex flex-col gap-4 flex-grow justify-center">
+                <!-- 普通输入框 -->
+                <input type="text" id="answer" placeholder="请输入答案" class="py-3 px-4 text-xl border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center">
+                
+                <!-- 分数输入区域 -->
+                <div id="fractionInput" class="hidden flex justify-center items-center gap-3">
+                    <div class="input-fraction">
+                        <input type="number" id="numerator" placeholder="分子" class="py-2 px-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <hr>
+                        <input type="number" id="denominator" placeholder="分母" class="py-2 px-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <span class="text-lg">或</span>
+                    <input type="text" id="fractionTextInput" placeholder="如：3/4" class="py-3 px-4 text-xl border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center w-40">
+                </div>
+                
+                <div class="text-center min-h-8" id="feedback"></div>
+                <button id="submitBtn" class="py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all font-medium">提交答案</button>
+                <button id="nextBtn" class="py-3 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xl rounded-xl hover:from-green-600 hover:to-teal-600 transition-all font-medium hidden">下一题</button>
+            </div>
+        </div>
+
+        <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20">
+            <div class="text-center">
+                <button id="restartBtn" class="py-3 px-6 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xl rounded-xl hover:from-red-600 hover:to-orange-600 transition-all font-medium">重新开始</button>
+                <p class="text-sm text-gray-500 mt-3">让学习更有趣</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const problemElement = document.getElementById('problem');
+    const problemTypeElement = document.getElementById('problemType');
+    const answerInput = document.getElementById('answer');
+    const fractionInput = document.getElementById('fractionInput');
+    const numeratorInput = document.getElementById('numerator');
+    const denominatorInput = document.getElementById('denominator');
+    const fractionTextInput = document.getElementById('fractionTextInput');
+    const feedbackElement = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submitBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const progressElement = document.getElementById('progress');
+    const scoreElement = document.getElementById('score');
+    const typeButtons = document.querySelectorAll('[data-type]');
+    
+    // 浮动设置面板相关元素
+    const floatingSettingsBtn = document.getElementById('floatingSettingsBtn');
+    const floatingSettingsPanel = document.getElementById('floatingSettingsPanel');
+    const floatingMinValue = document.getElementById('floatingMinValue');
+    const floatingMaxValue = document.getElementById('floatingMaxValue');
+    const floatingResultMaxValue = document.getElementById('floatingResultMaxValue');
+    const floatingMinLength = document.getElementById('floatingMinLength');
+    const floatingMaxLength = document.getElementById('floatingMaxLength');
+    const floatingAllowNegative = document.getElementById('floatingAllowNegative');
+    const floatingAllowRemainder = document.getElementById('floatingAllowRemainder');
+    const floatingSaveSettingsBtn = document.getElementById('floatingSaveSettingsBtn');
+    
+    // 浮动题型选择相关元素
+    const floatingTypeAll = document.getElementById('floatingTypeAll');
+    const floatingTypeSimple = document.getElementById('floatingTypeSimple');
+    const floatingTypeLong = document.getElementById('floatingTypeLong');
+    const floatingTypeBig = document.getElementById('floatingTypeBig');
+    const floatingTypeFraction = document.getElementById('floatingTypeFraction');
+    const floatingTypeEquation = document.getElementById('floatingTypeEquation');
+    const floatingTypeStep = document.getElementById('floatingTypeStep');
+    const floatingTypeWrong = document.getElementById('floatingTypeWrong');
+    
+    // 题型选择复选框数组
+    const typeCheckboxes = [floatingTypeSimple, floatingTypeLong, floatingTypeBig, 
+                           floatingTypeFraction, floatingTypeEquation, floatingTypeStep, 
+                           floatingTypeWrong];
+    
+    // 浮动错题本相关元素
+    const floatingWrongBtn = document.getElementById('floatingWrongBtn');
+    const floatingWrongPanel = document.getElementById('floatingWrongPanel');
+    const floatingWrongList = document.getElementById('floatingWrongList');
+    const floatingWrongCount = document.getElementById('floatingWrongCount');
+    const floatingClearWrongBtn = document.getElementById('floatingClearWrongBtn');
+    
+    // 设置默认值
+    let settings = {
+        minValue: 0,
+        maxValue: 10,
+        resultMaxValue: 100,
+        minLength: 5,
+        maxLength: 8,
+        allowNegative: false,
+        allowRemainder: false,
+        problemTypes: {
+            simple: true,
+            long: true,
+            big: true,
+            fraction: true,
+            equation: true,
+            step: true,
+            wrong: false
+        }
+    };
+
+    let currentProblemHTML = null;
+    let currentAnswer = null;
+    let currentAnswerText = null;
+    let currentAnswerHTML = null;
+    let currentProblemType = null;
+    let isFractionProblem = false;
+    let score = 0;
+    let currentQuestion = 0;
+    const totalQuestions = 10;
+    let selectedType = 'all';
+    let wrongQuestions = [];
+    
+    // 从localStorage加载错题本数据
+    try {
+        const savedWrongQuestions = localStorage.getItem('wrongQuestions');
+        if (savedWrongQuestions) {
+            wrongQuestions = JSON.parse(savedWrongQuestions);
+        }
+    } catch (e) {
+        console.error('加载错题本数据失败:', e);
+    }
+
+    // 初始化
+    loadSettings();
+    generateProblem();
+    updateProgress();
+    updateWrongBtn();
+
+    // 事件监听
+    submitBtn.addEventListener('click', checkAnswer);
+    nextBtn.addEventListener('click', nextProblem);
+    restartBtn.addEventListener('click', restartGame);
+    
+    // 普通输入框回车事件
+    answerInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !isFractionProblem) checkAnswer();
+    });
+    
+    // 分数输入框回车事件
+    numeratorInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && isFractionProblem) checkAnswer();
+    });
+    denominatorInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && isFractionProblem) checkAnswer();
+    });
+    fractionTextInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && isFractionProblem) checkAnswer();
+    });
+
+    // 题型选择按钮已移除
+    
+    // 浮动设置按钮
+    floatingSettingsBtn.addEventListener('click', function() {
+        floatingSettingsPanel.classList.toggle('active');
+        floatingWrongPanel.classList.remove('active');
+        
+        // 同步当前设置到浮动面板
+        floatingMinValue.value = settings.minValue;
+        floatingMaxValue.value = settings.maxValue;
+        floatingResultMaxValue.value = settings.resultMaxValue;
+        floatingMinLength.value = settings.minLength;
+        floatingMaxLength.value = settings.maxLength;
+        floatingAllowNegative.checked = settings.allowNegative;
+        floatingAllowRemainder.checked = settings.allowRemainder;
+        
+        // 同步题型选择
+        floatingTypeSimple.checked = settings.problemTypes.simple;
+        floatingTypeLong.checked = settings.problemTypes.long;
+        floatingTypeBig.checked = settings.problemTypes.big;
+        floatingTypeFraction.checked = settings.problemTypes.fraction;
+        floatingTypeEquation.checked = settings.problemTypes.equation;
+        floatingTypeStep.checked = settings.problemTypes.step;
+        floatingTypeWrong.checked = settings.problemTypes.wrong;
+        
+        // 更新全选按钮状态
+        updateAllCheckboxState();
+    });
+    
+    // 全选按钮点击事件
+    floatingTypeAll.addEventListener('click', function() {
+        // 根据全选按钮的状态设置所有题型选择框
+        typeCheckboxes.forEach(checkbox => {
+            checkbox.checked = floatingTypeAll.checked;
+        });
+    });
+    
+    // 单个题型选择框点击事件
+    typeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('click', function() {
+            updateAllCheckboxState();
+        });
+    });
+    
+    // 更新全选按钮状态
+    function updateAllCheckboxState() {
+        // 检查是否所有题型都被选中
+        const allChecked = typeCheckboxes.every(checkbox => checkbox.checked);
+        // 检查是否所有题型都未被选中
+        const allUnchecked = typeCheckboxes.every(checkbox => !checkbox.checked);
+        
+        // 如果所有题型都被选中，则全选按钮也被选中
+        floatingTypeAll.checked = allChecked;
+        // 如果所有题型都未被选中，则全选按钮也未被选中
+        if (allUnchecked) {
+            floatingTypeAll.checked = false;
+        }
+    }
+    
+    // 浮动错题本按钮点击事件
+    floatingWrongBtn.addEventListener('click', function() {
+        floatingWrongPanel.classList.toggle('active');
+        floatingSettingsPanel.classList.remove('active');
+        
+        // 更新错题本内容
+        renderWrongList(floatingWrongList);
+    });
+    
+    // 浮动错题本清空按钮点击事件
+    floatingClearWrongBtn.addEventListener('click', function() {
+        if (confirm('确定要清空错题本吗？')) {
+            wrongQuestions = [];
+            localStorage.setItem('wrongQuestions', JSON.stringify(wrongQuestions));
+            renderWrongList(floatingWrongList);
+            updateWrongBtn();
+        }
+    });
+    
+    // 点击其他区域关闭浮动面板
+    document.addEventListener('click', function(event) {
+        if (!floatingSettingsBtn.contains(event.target) && 
+            !floatingSettingsPanel.contains(event.target)) {
+            floatingSettingsPanel.classList.remove('active');
+        }
+        
+        if (!floatingWrongBtn.contains(event.target) && 
+            !floatingWrongPanel.contains(event.target)) {
+            floatingWrongPanel.classList.remove('active');
+        }
+    });
+    
+    // 浮动设置保存按钮
+    floatingSaveSettingsBtn.addEventListener('click', function() {
+        // 更新设置
+        settings.minValue = parseInt(floatingMinValue.value) || 0;
+        settings.maxValue = parseInt(floatingMaxValue.value) || 10;
+        settings.resultMaxValue = parseInt(floatingResultMaxValue.value) || 100;
+        settings.minLength = parseInt(floatingMinLength.value) || 5;
+        settings.maxLength = parseInt(floatingMaxLength.value) || 8;
+        settings.allowNegative = floatingAllowNegative.checked;
+        settings.allowRemainder = floatingAllowRemainder.checked;
+        
+        // 更新题型选择
+        settings.problemTypes.simple = floatingTypeSimple.checked;
+        settings.problemTypes.long = floatingTypeLong.checked;
+        settings.problemTypes.big = floatingTypeBig.checked;
+        settings.problemTypes.fraction = floatingTypeFraction.checked;
+        settings.problemTypes.equation = floatingTypeEquation.checked;
+        settings.problemTypes.step = floatingTypeStep.checked;
+        settings.problemTypes.wrong = floatingTypeWrong.checked;
+        
+        // 确保最小值小于最大值
+        if (settings.minValue >= settings.maxValue) {
+            settings.minValue = settings.maxValue - 1;
+            floatingMinValue.value = settings.minValue;
+        }
+        
+        // 确保最短长度小于最长长度
+        if (settings.minLength >= settings.maxLength) {
+            settings.minLength = settings.maxLength - 1;
+            floatingMinLength.value = settings.minLength;
+        }
+        
+        // 确保至少选择了一种题型
+        if (!settings.problemTypes.simple && !settings.problemTypes.long && 
+            !settings.problemTypes.big && !settings.problemTypes.fraction && 
+            !settings.problemTypes.equation && !settings.problemTypes.step && 
+            !settings.problemTypes.wrong) {
+            alert('请至少选择一种题型！');
+            settings.problemTypes.simple = true;
+            floatingTypeSimple.checked = true;
+            return;
+        }
+        
+        // 保存设置
+        localStorage.setItem('mathSettings', JSON.stringify(settings));
+        
+        alert('设置已保存！');
+        floatingSettingsPanel.classList.remove('active');
+        restartGame();
+    });
+
+    // 原错题本面板已移除
+
+    // 生成题目
+    function generateProblem() {
+        let problemHTML, answer, answerText, answerHTML, type;
+        let attempts = 0; // 防止无限循环
+
+        do {
+            // 根据设置中的题型选择来生成题目
+            if (selectedType !== 'all') {
+                // 如果用户选择了特定题型，则使用该题型
+                switch(selectedType) {
+                    case 'simple':
+                        [problemHTML, answer, answerText, answerHTML, type] = generateSimpleProblem();
+                        isFractionProblem = false;
+                        break;
+                    case 'long':
+                        [problemHTML, answer, answerText, answerHTML, type] = generateLongProblem();
+                        isFractionProblem = false;
+                        break;
+                    case 'big':
+                        [problemHTML, answer, answerText, answerHTML, type] = generateBigNumberProblem();
+                        isFractionProblem = false;
+                        break;
+                    case 'fraction':
+                        [problemHTML, answer, answerText, answerHTML, type] = generateFractionProblem();
+                        isFractionProblem = true;
+                        break;
+                    case 'equation':
+                        [problemHTML, answer, answerText, answerHTML, type] = generateEquationProblem();
+                        isFractionProblem = false;
+                        break;
+                    case 'step':
+                        [problemHTML, answer, answerText, answerHTML, type] = generateStepProblem();
+                        isFractionProblem = false;
+                        break;
+                }
+            } else {
+                // 如果用户选择了"全部"，则从已启用的题型中随机选择
+                const enabledTypes = [];
+                if (settings.problemTypes.simple) enabledTypes.push('simple');
+                if (settings.problemTypes.long) enabledTypes.push('long');
+                if (settings.problemTypes.big) enabledTypes.push('big');
+                if (settings.problemTypes.fraction) enabledTypes.push('fraction');
+                if (settings.problemTypes.equation) enabledTypes.push('equation');
+                if (settings.problemTypes.step) enabledTypes.push('step');
+                if (settings.problemTypes.wrong && wrongQuestions.length > 0) enabledTypes.push('wrong');
+                
+                // 如果没有启用任何题型，默认使用simple
+                if (enabledTypes.length === 0) {
+                    enabledTypes.push('simple');
+                    settings.problemTypes.simple = true;
+                }
+                
+                const randomType = enabledTypes[Math.floor(Math.random() * enabledTypes.length)];
+                switch(randomType) {
+                    case 'simple': [problemHTML, answer, answerText, answerHTML, type] = generateSimpleProblem(); isFractionProblem = false; break;
+                    case 'long': [problemHTML, answer, answerText, answerHTML, type] = generateLongProblem(); isFractionProblem = false; break;
+                    case 'big': [problemHTML, answer, answerText, answerHTML, type] = generateBigNumberProblem(); isFractionProblem = false; break;
+                    case 'fraction': [problemHTML, answer, answerText, answerHTML, type] = generateFractionProblem(); isFractionProblem = true; break;
+                    case 'equation': [problemHTML, answer, answerText, answerHTML, type] = generateEquationProblem(); isFractionProblem = false; break;
+                    case 'step': [problemHTML, answer, answerText, answerHTML, type] = generateStepProblem(); isFractionProblem = false; break;
+                    case 'wrong': [problemHTML, answer, answerText, answerHTML, type] = generateWrongProblem(); isFractionProblem = type.includes('分式'); break;
+                }
+            }
+            attempts++;
+            if (attempts > 100) {
+                // 如果尝试100次都失败，说明设置可能有问题，强制降低难度
+                settings.resultMaxValue *= 2;
+                floatingResultMaxValue.value = settings.resultMaxValue;
+                alert('当前设置下难以生成有效题目，已自动调整结果最大值限制。');
+            }
+        } while (!isValidProblem(answer, answerText) && attempts <= 100);
+
+        currentProblemHTML = problemHTML;
+        currentAnswer = answer;
+        currentAnswerText = answerText;
+        currentAnswerHTML = answerHTML;
+        currentProblemType = type;
+        problemElement.innerHTML = problemHTML;
+        problemTypeElement.textContent = type;
+        
+        // 根据题目类型显示相应的输入框
+        if (isFractionProblem) {
+            answerInput.classList.add('hidden');
+            fractionInput.classList.remove('hidden');
+            numeratorInput.value = '';
+            denominatorInput.value = '';
+            fractionTextInput.value = '';
+            numeratorInput.focus();
+        } else {
+            answerInput.classList.remove('hidden');
+            fractionInput.classList.add('hidden');
+            answerInput.value = '';
+            answerInput.focus();
+        }
+        
+        feedbackElement.textContent = '';
+        feedbackElement.className = 'text-center min-h-8';
+        submitBtn.classList.remove('hidden');
+        nextBtn.classList.add('hidden');
+    }
+
+    // 验证题目是否有效
+    function isValidProblem(answer, answerText) {
+        if (answer === null || answer === undefined || answer === -1 || answerText === '') {
+            return false;
+        }
+        
+        // 检查是否为负数（除非允许负数）
+        if (!settings.allowNegative) {
+            if (typeof answer === 'number' && answer < 0) {
+                return false;
+            }
+            if (typeof answer === 'string' && answer.startsWith('-')) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    // 获取范围内的随机整数
+    function getRandomNumber() {
+        return Math.floor(Math.random() * (settings.maxValue - settings.minValue + 1)) + settings.minValue;
+    }
+
+    // 基础计算（加减乘除）
+    function generateSimpleProblem() {
+        const operations = ['+', '-', '×', '÷'];
+        let op, a, b, answer, problemHTML, answerText, answerHTML, type;
+
+        // 循环直到生成有效的题目
+        do {
+            op = operations[Math.floor(Math.random() * operations.length)];
+            a = getRandomNumber();
+            b = getRandomNumber();
+            answer = 0;
+            problemHTML = '';
+            type = '';
+            answerText = '';
+            answerHTML = '';
+
+            switch(op) {
+                case '+':
+                    answer = a + b;
+                    // 检查结果是否超过最大值
+                    if (answer > settings.resultMaxValue) {
+                        answer = -1;
+                        break;
+                    }
+                    problemHTML = `${a} + ${b} = ?`;
+                    type = '基础加法';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
+                    break;
+                case '-':
+                    answer = a - b;
+                    // 如果不允许负数，确保结果非负
+                    if (!settings.allowNegative && answer < 0) {
+                        answer = -1;
+                        break;
+                    }
+                    problemHTML = `${a} - ${b} = ?`;
+                    type = '基础减法';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
+                    break;
+                case '×':
+                    answer = a * b;
+                    // 检查结果是否超过最大值
+                    if (answer > settings.resultMaxValue) {
+                        answer = -1;
+                        break;
+                    }
+                    problemHTML = `${a} × ${b} = ?`;
+                    type = '基础乘法';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
+                    break;
+                case '÷':
+                    if (b === 0) {
+                        answer = -1;
+                        break;
+                    }
+                    
+                    if (settings.allowRemainder) {
+                        // 允许余数，任何除法都可以
+                        answer = Math.floor(a / b);
+                        const remainder = a % b;
+                        problemHTML = `${a} ÷ ${b} = ?`;
+                        answerText = remainder === 0 ? answer.toString() : `${answer}……${remainder}`;
+                        answerHTML = answerText;
+                        answer = { quotient: answer, remainder: remainder };
+                    } else {
+                        // 不允许余数，确保整除
+                        if (a % b === 0) {
+                            answer = a / b;
+                            problemHTML = `${a} ÷ ${b} = ?`;
+                            answerText = answer.toString();
+                            answerHTML = answerText;
+                        } else {
+                            // 重新生成
+                            answer = -1;
+                        }
+                    }
+                    type = '基础除法';
+                    break;
+            }
+        } while (answer === -1); // 确保有效题目
+
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+
+    // 长式子计算
+    function generateLongProblem() {
+        const operations = ['+', '-', '×'];
+        let numbers, ops, problemHTML, answer, type, answerText, answerHTML;
+
+        // 循环直到生成有效的题目
+        do {
+            const length = Math.floor(Math.random() * (settings.maxLength - settings.minLength + 1)) + settings.minLength;
+            numbers = [];
+            ops = [];
+            
+            for(let i = 0; i < length; i++) {
+                numbers.push(getRandomNumber());
+            }
+            
+            for(let i = 0; i < length - 1; i++) {
+                ops.push(operations[Math.floor(Math.random() * operations.length)]);
+            }
+            
+            // 计算答案（按顺序计算，不考虑优先级）
+            answer = numbers[0];
+            let valid = true;
+            for(let i = 0; i < ops.length; i++) {
+                switch(ops[i]) {
+                    case '+': answer += numbers[i+1]; break;
+                    case '-': 
+                        answer -= numbers[i+1];
+                        if (!settings.allowNegative && answer < 0) valid = false;
+                        break;
+                    case '×': answer *= numbers[i+1]; break;
+                }
+                if (!valid) break;
+                // 检查中间结果是否超过最大值
+                if (answer > settings.resultMaxValue) {
+                    valid = false;
+                    break;
+                }
+            }
+            
+            if (valid && answer <= settings.resultMaxValue) {
+                // 构建题目字符串
+                problemHTML = '';
+                for(let i = 0; i < numbers.length; i++) {
+                    problemHTML += numbers[i];
+                    if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+                }
+                problemHTML += ' = ?';
+                type = '长式子计算';
+                answerText = answer.toString();
+                answerHTML = answerText;
+            }
+        } while (!problemHTML); // 确保有效题目
+
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+
+    // 大数计算
+    function generateBigNumberProblem() {
+        const operations = ['+', '-'];
+        let op, a, b, answer, problemHTML, type, answerText, answerHTML;
+
+        // 循环直到生成有效的题目
+        do {
+            op = operations[Math.floor(Math.random() * operations.length)];
+            a = Math.floor(Math.random() * 9000) + 1000; // 4位数
+            b = Math.floor(Math.random() * 9000) + 1000; // 4位数
+            answer = 0;
+            problemHTML = '';
+            type = '';
+            answerText = '';
+            answerHTML = '';
+
+            switch(op) {
+                case '+':
+                    answer = a + b;
+                    // 检查结果是否超过最大值
+                    if (answer > settings.resultMaxValue) {
+                        answer = -1;
+                        break;
+                    }
+                    problemHTML = `${a} + ${b} = ?`;
+                    type = '大数加法';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
+                    break;
+                case '-':
+                    answer = a - b;
+                    if (!settings.allowNegative && answer < 0) {
+                        answer = -1;
+                        break;
+                    }
+                    problemHTML = `${a} - ${b} = ?`;
+                    type = '大数减法';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
+                    break;
+            }
+        } while (answer === -1); // 确保有效题目
+
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+
+    // 分式计算
+    function generateFractionProblem() {
+        const operations = ['+', '-'];
+        let op, num1, den1, num2, den2, numerator, denominator, answer, problemHTML, type, answerText, answerHTML;
+
+        // 循环直到生成有效的题目
+        do {
+            op = operations[Math.floor(Math.random() * operations.length)];
+            
+            // 生成简单分数（确保分子小于分母，真分数）
+            den1 = Math.floor(Math.random() * 9) + 2; // 分母至少为2
+            num1 = Math.floor(Math.random() * (den1 - 1)) + 1; // 分子比分母小
+            
+            den2 = Math.floor(Math.random() * 9) + 2;
+            num2 = Math.floor(Math.random() * (den2 - 1)) + 1;
+
+            // 简化分数
+            const gcd1 = gcd(num1, den1);
+            const gcd2 = gcd(num2, den2);
+            const simplifiedNum1 = num1 / gcd1;
+            const simplifiedDen1 = den1 / gcd1;
+            const simplifiedNum2 = num2 / gcd2;
+            const simplifiedDen2 = den2 / gcd2;
+
+            numerator = 0;
+            denominator = 0;
+            problemHTML = '';
+            type = '';
+            answer = null;
+            answerText = '';
+            answerHTML = '';
+
+            switch(op) {
+                case '+':
+                    numerator = simplifiedNum1 * simplifiedDen2 + simplifiedNum2 * simplifiedDen1;
+                    denominator = simplifiedDen1 * simplifiedDen2;
+                    problemHTML = `${createFractionHTML(simplifiedNum1, simplifiedDen1)} + ${createFractionHTML(simplifiedNum2, simplifiedDen2)} = ?`;
+                    type = '分式加法';
+                    break;
+                case '-':
+                    // 确保结果不为负，除非允许负数
+                    const value1 = simplifiedNum1 / simplifiedDen1;
+                    const value2 = simplifiedNum2 / simplifiedDen2;
+                    
+                    if (value1 >= value2 || settings.allowNegative) {
+                        numerator = simplifiedNum1 * simplifiedDen2 - simplifiedNum2 * simplifiedDen1;
+                        denominator = simplifiedDen1 * simplifiedDen2;
+                        problemHTML = `${createFractionHTML(simplifiedNum1, simplifiedDen1)} - ${createFractionHTML(simplifiedNum2, simplifiedDen2)} = ?`;
+                        type = '分式减法';
+                    } else {
+                        // 交换两个分数
+                        numerator = simplifiedNum2 * simplifiedDen1 - simplifiedNum1 * simplifiedDen2;
+                        denominator = simplifiedDen1 * simplifiedDen2;
+                        problemHTML = `${createFractionHTML(simplifiedNum2, simplifiedDen2)} - ${createFractionHTML(simplifiedNum1, simplifiedDen1)} = ?`;
+                        type = '分式减法';
+                    }
+                    break;
+            }
+
+            if (numerator !== 0 && denominator > 0) {
+                // 简化结果分数
+                const commonDivisor = gcd(Math.abs(numerator), denominator);
+                const simplifiedResultNum = numerator / commonDivisor;
+                const simplifiedResultDen = denominator / commonDivisor;
+
+                // 检查结果是否为整数且超过最大值
+                if (simplifiedResultDen === 1) {
+                    if (simplifiedResultNum > settings.resultMaxValue) {
+                        answer = null; // 结果太大，重新生成
+                    } else {
+                        answer = simplifiedResultNum;
+                        answerText = answer.toString();
+                        answerHTML = answerText;
+                    }
+                } else {
+                    answer = `${simplifiedResultNum}/${simplifiedResultDen}`;
+                    answerText = answer;
+                    answerHTML = createFractionHTML(simplifiedResultNum, simplifiedResultDen);
+                }
+            }
+        } while (!answer); // 确保生成有效答案
+
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+
+    // 创建分数的HTML表示
+    function createFractionHTML(numerator, denominator) {
+        return `<span class="fraction"><span class="fraction-top">${numerator}</span><span class="fraction-bottom">${denominator}</span></span>`;
+    }
+
+    // 方程计算 - 多步复杂方程
+    function generateEquationProblem() {
+        let terms = [];
+        let equationString = '';
+        let xCoefficient = 0;
+        let constantTerm = 0;
+        let answer = 0;
+        let attempts = 0;
+
+        do {
+            terms = [];
+            xCoefficient = 0;
+            constantTerm = 0;
+            
+            // 生成4-5个项
+            const termCount = Math.floor(Math.random() * 2) + 4;
+            
+            for (let i = 0; i < termCount; i++) {
+                const isXTerm = Math.random() > 0.5; // 50%概率是x项，50%是常数项
+                const coefficient = Math.floor(Math.random() * 9) + 1; // 系数1-9
+                const isPositive = Math.random() > 0.5; // 随机正负
+                
+                // 对于每一项，独立决定正负
+                const sign = isPositive ? '+' : '-';
+                const actualCoefficient = isPositive ? coefficient : -coefficient;
+                
+                if (isXTerm) {
+                    terms.push({ type: 'x', coefficient: actualCoefficient, sign: sign, displayCoeff: coefficient });
+                    xCoefficient += actualCoefficient;
+                } else {
+                    terms.push({ type: 'constant', value: actualCoefficient, sign: sign, displayValue: coefficient });
+                    constantTerm += actualCoefficient;
+                }
+            }
+            
+            // 构建方程字符串 - 修复了空格问题
+            equationString = '';
+            terms.forEach((term, index) => {
+                if (index === 0) {
+                    // 第一项
+                    if (term.type === 'x') {
+                        const coeffDisplay = term.displayCoeff === 1 ? '' : term.displayCoeff;
+                        equationString += coeffDisplay + 'x';
+                    } else {
+                        equationString += term.displayValue;
+                    }
+                } else {
+                    // 非第一项，需要加符号和空格
+                    if (term.type === 'x') {
+                        const coeffDisplay = term.displayCoeff === 1 ? '' : term.displayCoeff;
+                        equationString += ' ' + term.sign + ' ' + coeffDisplay + 'x';
+                    } else {
+                        equationString += ' ' + term.sign + ' ' + term.displayValue;
+                    }
+                }
+            });
+            
+            // 确保方程有解且解为整数且不为零
+            if (xCoefficient !== 0) {
+                answer = -constantTerm / xCoefficient;
+                if (Number.isInteger(answer) && Math.abs(answer) <= settings.maxValue && Math.abs(answer) > 0) {
+                    break;
+                }
+            }
+            
+            attempts++;
+            if (attempts > 50) {
+                // 多次尝试失败后，生成简单方程
+                const a = Math.floor(Math.random() * 5) + 1;
+                const b = a * (Math.floor(Math.random() * 5) + 1);
+                equationString = `${a}x - ${b}`;
+                answer = b / a;
+                break;
+            }
+        } while (true);
+
+        const problemHTML = `${equationString} = 0 (求出x的值)`;
+        const type = `多步方程 (${terms.length}项)`;
+        const answerText = answer.toString();
+        const answerHTML = answerText;
+
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+
+    // 脱式计算
+    function generateStepProblem() {
+        const operations = ['+', '-', '×'];
+        let numbers, ops, problemHTML, answer, type, answerText, answerHTML;
+
+        // 循环直到生成有效的题目
+        do {
+            const length = Math.floor(Math.random() * 3) + 2; // 2-4个数字
+            numbers = [];
+            ops = [];
+            
+            for(let i = 0; i < length; i++) {
+                numbers.push(getRandomNumber());
+            }
+            
+            for(let i = 0; i < length - 1; i++) {
+                ops.push(operations[Math.floor(Math.random() * operations.length)]);
+            }
+            
+            // 计算答案（按顺序计算，不考虑优先级）
+            answer = numbers[0];
+            let valid = true;
+            for(let i = 0; i < ops.length; i++) {
+                switch(ops[i]) {
+                    case '+': answer += numbers[i+1]; break;
+                    case '-': 
+                        answer -= numbers[i+1];
+                        if (!settings.allowNegative && answer < 0) valid = false;
+                        break;
+                    case '×': answer *= numbers[i+1]; break;
+                }
+                if (!valid) break;
+                // 检查中间结果是否超过最大值
+                if (answer > settings.resultMaxValue) {
+                    valid = false;
+                    break;
+                }
+            }
+            
+            if (valid && answer <= settings.resultMaxValue) {
+                // 构建题目字符串
+                problemHTML = '';
+                for(let i = 0; i < numbers.length; i++) {
+                    problemHTML += numbers[i];
+                    if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+                }
+                problemHTML += ' = ?';
+                type = '脱式计算';
+                answerText = answer.toString();
+                answerHTML = answerText;
+            }
+        } while (!problemHTML); // 确保有效题目
+
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+
+    // 检查答案
+    function checkAnswer() {
+        let userAnswer = '';
+        let userAnswerHTML = '';
+        
+        if (isFractionProblem) {
+            // 处理分数输入
+            const numerator = numeratorInput.value.trim();
+            const denominator = denominatorInput.value.trim();
+            const fractionText = fractionTextInput.value.trim();
+            
+            if (fractionText) {
+                // 使用文本输入
+                userAnswer = fractionText.replace(' ', '/');
+                const parts = userAnswer.split('/');
+                if (parts.length === 2) {
+                    userAnswerHTML = createFractionHTML(parts[0], parts[1]);
+                } else {
+                    userAnswerHTML = userAnswer;
+                }
+            } else if (numerator && denominator) {
+                // 使用上下结构输入
+                userAnswer = `${numerator}/${denominator}`;
+                userAnswerHTML = createFractionHTML(numerator, denominator);
+            } else {
+                feedbackElement.textContent = '请输入完整的分数！';
+                feedbackElement.className = 'text-center min-h-8 text-red-500 font-medium';
+                return;
+            }
+        } else {
+            // 处理普通输入
+            userAnswer = answerInput.value.trim();
+            userAnswerHTML = userAnswer;
+            
+            if(userAnswer === '') {
+                feedbackElement.textContent = '请输入答案！';
+                feedbackElement.className = 'text-center min-h-8 text-red-500 font-medium';
+                return;
+            }
+        }
+
+        let isCorrect = false;
+        
+        // 检查是否为分数答案
+        if (typeof currentAnswer === 'string' && currentAnswer.includes('/')) {
+            // 允许两种输入格式："3/4" 或 "3 4"
+            const normalizedUserAnswer = userAnswer.replace(' ', '/');
+            isCorrect = normalizedUserAnswer === currentAnswer;
+        } 
+        // 检查是否为带余数的除法
+        else if (typeof currentAnswer === 'object' && currentAnswer.hasOwnProperty('quotient')) {
+            // 允许两种输入格式："5……2" 或 "5 2"
+            const parts = userAnswer.includes('……') ? userAnswer.split('……') : userAnswer.split(' ');
+            if (parts.length === 2) {
+                const quotient = parseInt(parts[0]);
+                const remainder = parseInt(parts[1]);
+                isCorrect = quotient === currentAnswer.quotient && remainder === currentAnswer.remainder;
+            }
+        }
+        else {
+            // 数字答案
+            isCorrect = parseFloat(userAnswer) === parseFloat(currentAnswer);
+        }
+
+        if(isCorrect) {
+            feedbackElement.textContent = '✓ 回答正确！真棒！';
+            feedbackElement.className = 'text-center min-h-8 text-green-500 font-medium';
+            score++;
+            scoreElement.textContent = score;
+        } else {
+            // 使用HTML格式的答案显示，分数会是上下结构
+            feedbackElement.innerHTML = `✗ 答案错误，正确答案是 ${currentAnswerHTML}`;
+            feedbackElement.className = 'text-center min-h-8 text-red-500 font-medium';
+            // 添加到错题本
+            addToWrongList(userAnswer, userAnswerHTML);
+        }
+
+        submitBtn.classList.add('hidden');
+        nextBtn.classList.remove('hidden');
+    }
+
+    // 添加到错题本
+    function addToWrongList(userAnswer, userAnswerHTML) {
+        // 检查是否已存在相同的题目
+        const existingProblemIndex = wrongQuestions.findIndex(item => item.problem === currentProblemHTML);
+        
+        if (existingProblemIndex === -1) {
+            // 如果不存在相同题目，则添加到错题本
+            wrongQuestions.push({
+                problem: currentProblemHTML,
+                userAnswer: userAnswer,
+                userAnswerHTML: userAnswerHTML,
+                correctAnswer: currentAnswerText,
+                correctAnswerHTML: currentAnswerHTML,
+                type: currentProblemType,
+                time: new Date().toLocaleString()
+            });
+            // 保存到本地存储
+            localStorage.setItem('wrongQuestions', JSON.stringify(wrongQuestions));
+            updateWrongBtn();
+        }
+    }
+
+    // 更新错题本按钮
+    function updateWrongBtn() {
+        // 更新浮动错题本按钮的文本
+        floatingWrongBtn.setAttribute('title', `错题本 (${wrongQuestions.length})`);
+        // 更新错题数量显示
+        floatingWrongCount.textContent = wrongQuestions.length;
+    }
+
+    // 渲染错题本列表
+    function renderWrongList(targetElement) {
+        if (wrongQuestions.length === 0) {
+            targetElement.innerHTML = '<p class="text-center text-gray-500 italic">暂无错题</p>';
+            return;
+        }
+
+        let html = '<div class="space-y-3">';
+        wrongQuestions.forEach((item, index) => {
+            html += `
+                <div class="p-2 bg-white rounded-lg border border-red-200">
+                    <div class="font-medium">${item.problem}</div>
+                    <div class="text-sm text-red-600">你的答案: ${item.userAnswerHTML}</div>
+                    <div class="text-sm text-green-600">正确答案: ${item.correctAnswerHTML}</div>
+                    <div class="text-xs text-gray-500 mt-1">${item.type} | ${item.time}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        targetElement.innerHTML = html;
+    }
+
+    // 下一题
+    function nextProblem() {
+        currentQuestion++;
+        if(currentQuestion < totalQuestions) {
+            generateProblem();
+            updateProgress();
+        } else {
+            // 游戏结束
+            problemElement.textContent = `游戏结束！你的得分是 ${score}/${totalQuestions}`;
+            problemTypeElement.textContent = score >= 7 ? '太棒了！继续努力！' : '加油！下次会更好！';
+            answerInput.classList.add('hidden');
+            fractionInput.classList.add('hidden');
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+        }
+    }
+
+    // 重新开始
+    function restartGame() {
+        score = 0;
+        currentQuestion = 0;
+        scoreElement.textContent = score;
+        generateProblem();
+        updateProgress();
+    }
+
+    // 更新进度
+    function updateProgress() {
+        progressElement.textContent = `${currentQuestion + 1}/${totalQuestions}`;
+    }
+
+    // 最大公约数计算
+    function gcd(a, b) {
+        return b === 0 ? a : gcd(b, a % b);
+    }
+    
+    // 从错题本中随机生成题目
+    function generateWrongProblem() {
+        if (wrongQuestions.length === 0) {
+            return generateSimpleProblem(); // 如果错题本为空，则生成一个简单题目
+        }
+        
+        // 从错题本中随机选择一道题目
+        const randomIndex = Math.floor(Math.random() * wrongQuestions.length);
+        const wrongQuestion = wrongQuestions[randomIndex];
+        
+        // 返回错题本中的题目信息
+        return [
+            wrongQuestion.problem,
+            wrongQuestion.correctAnswer,
+            wrongQuestion.correctAnswer,
+            wrongQuestion.correctAnswerHTML,
+            '错题练习 - ' + wrongQuestion.type
+        ];
+    }
+
+    // 保存设置
+    function saveSettings() {
+        // 此函数已不再使用，所有设置保存逻辑已移至floatingSaveSettingsBtn事件监听器
+        console.log('saveSettings函数已废弃，请使用浮动设置面板保存设置');
+    }
+
+    // 加载设置
+    function loadSettings() {
+        // 只加载浮动设置面板的设置
+        floatingMinValue.value = settings.minValue;
+        floatingMaxValue.value = settings.maxValue;
+        floatingResultMaxValue.value = settings.resultMaxValue;
+        floatingMinLength.value = settings.minLength;
+        floatingMaxLength.value = settings.maxLength;
+        floatingAllowNegative.checked = settings.allowNegative;
+        floatingAllowRemainder.checked = settings.allowRemainder;
+        
+        // 加载题型选择设置
+        floatingTypeSimple.checked = settings.problemTypes.simple;
+        floatingTypeLong.checked = settings.problemTypes.long;
+        floatingTypeBig.checked = settings.problemTypes.big;
+        floatingTypeFraction.checked = settings.problemTypes.fraction;
+        floatingTypeEquation.checked = settings.problemTypes.equation;
+        floatingTypeStep.checked = settings.problemTypes.step;
+        floatingTypeWrong.checked = settings.problemTypes.wrong;
+        
+        // 更新全选按钮状态
+        updateAllCheckboxState();
+    }
+});
+</script>
+</body>
 </html>
