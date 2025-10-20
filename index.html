@@ -119,6 +119,15 @@
     <!-- 浮动设置面板 -->
     <div id="floatingSettingsPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
         <h3 class="font-bold text-lg text-center text-purple-700 mb-3">设置</h3>
+        <div id="settingsLockBar" class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">输入密码解锁设置（默认锁定）</label>
+            <div class="flex gap-2">
+                <input type="password" id="settingsPasswordInput" placeholder="输入密码" class="flex-1 py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <button id="settingsUnlockBtn" class="px-3 py-2 rounded-lg text-sm font-medium bg-purple-500 text-white hover:bg-purple-600">解锁</button>
+                <button id="settingsLockBtn" class="px-3 py-2 rounded-lg text-sm font-medium bg-gray-500 text-white hover:bg-gray-600 hidden">重新锁定</button>
+            </div>
+            <p id="settingsLockMsg" class="text-red-600 text-xs mt-1 hidden">密码错误，请重试</p>
+        </div>
         <div class="grid grid-cols-1 gap-3">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">数字最小值</label>
@@ -204,6 +213,28 @@
                         <input type="checkbox" id="floatingTypeWrong" value="1" 
                                class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
                         <span>错题练习</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-3 mt-2">
+                <h4 class="font-medium text-gray-700 mb-2">错误惩罚</h4>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penaltyNone" value="0" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded" checked>
+                        <span>不罚</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penalty5" value="5" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错1罚5</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penalty10" value="10" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错1罚10</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penalty20" value="20" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错1罚20</span>
                     </label>
                 </div>
             </div>
@@ -297,6 +328,55 @@ document.addEventListener('DOMContentLoaded', function() {
     const floatingAllowRemainder = document.getElementById('floatingAllowRemainder');
     const floatingSaveSettingsBtn = document.getElementById('floatingSaveSettingsBtn');
     
+    // 设置锁定相关元素
+    const settingsPasswordInput = document.getElementById('settingsPasswordInput');
+    const settingsUnlockBtn = document.getElementById('settingsUnlockBtn');
+    const settingsLockBtn = document.getElementById('settingsLockBtn');
+    const settingsLockMsg = document.getElementById('settingsLockMsg');
+    let settingsLocked = true;
+
+    function setSettingsInputsDisabled(disabled) {
+        floatingMinValue.disabled = disabled;
+        floatingMaxValue.disabled = disabled;
+        floatingResultMaxValue.disabled = disabled;
+        floatingMinLength.disabled = disabled;
+        floatingMaxLength.disabled = disabled;
+        floatingAllowNegative.disabled = disabled;
+        floatingAllowRemainder.disabled = disabled;
+        floatingTypeAll.disabled = disabled;
+        typeCheckboxes.forEach(cb => cb.disabled = disabled);
+        document.querySelectorAll('input[name="penaltyOption"]').forEach(r => r.disabled = disabled);
+        floatingSaveSettingsBtn.disabled = disabled;
+    }
+
+    function applySettingsLockState() {
+        setSettingsInputsDisabled(settingsLocked);
+        if (settingsLocked) {
+            settingsUnlockBtn.classList.remove('hidden');
+            settingsLockBtn.classList.add('hidden');
+        } else {
+            settingsUnlockBtn.classList.add('hidden');
+            settingsLockBtn.classList.remove('hidden');
+            settingsLockMsg.classList.add('hidden');
+            settingsPasswordInput.value = '';
+        }
+    }
+
+    settingsUnlockBtn.addEventListener('click', function() {
+        if (settingsPasswordInput.value === '1313234') {
+            settingsLocked = false;
+            applySettingsLockState();
+        } else {
+            settingsLockMsg.textContent = '密码错误，请重试';
+            settingsLockMsg.classList.remove('hidden');
+        }
+    });
+
+    settingsLockBtn.addEventListener('click', function() {
+        settingsLocked = true;
+        applySettingsLockState();
+    });
+    
     // 浮动题型选择相关元素
     const floatingTypeAll = document.getElementById('floatingTypeAll');
     const floatingTypeSimple = document.getElementById('floatingTypeSimple');
@@ -328,6 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
         maxLength: 8,
         allowNegative: false,
         allowRemainder: false,
+        wrongPenalty: 0,
         problemTypes: {
             simple: true,
             long: true,
@@ -347,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let isFractionProblem = false;
     let score = 0;
     let currentQuestion = 0;
-    const totalQuestions = 10;
+    let totalQuestions = 10;
     let selectedType = 'all';
     let wrongQuestions = [];
     
@@ -363,6 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始化
     loadSettings();
+    applySettingsLockState();
     generateProblem();
     updateProgress();
     updateWrongBtn();
@@ -412,6 +494,11 @@ document.addEventListener('DOMContentLoaded', function() {
         floatingTypeEquation.checked = settings.problemTypes.equation;
         floatingTypeStep.checked = settings.problemTypes.step;
         floatingTypeWrong.checked = settings.problemTypes.wrong;
+
+        // 同步错误惩罚选项
+        document.querySelectorAll('input[name="penaltyOption"]').forEach(r => {
+            r.checked = parseInt(r.value) === (settings.wrongPenalty || 0);
+        });
         
         // 更新全选按钮状态
         updateAllCheckboxState();
@@ -481,6 +568,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 浮动设置保存按钮
     floatingSaveSettingsBtn.addEventListener('click', function() {
+        if (settingsLocked) {
+            alert('请先输入密码解锁设置');
+            return;
+        }
         // 更新设置
         settings.minValue = parseInt(floatingMinValue.value) || 0;
         settings.maxValue = parseInt(floatingMaxValue.value) || 10;
@@ -498,6 +589,13 @@ document.addEventListener('DOMContentLoaded', function() {
         settings.problemTypes.equation = floatingTypeEquation.checked;
         settings.problemTypes.step = floatingTypeStep.checked;
         settings.problemTypes.wrong = floatingTypeWrong.checked;
+        
+        // 错误惩罚选项
+        const checkedPenaltyRadio = document.querySelector('input[name="penaltyOption"]:checked');
+        settings.wrongPenalty = checkedPenaltyRadio ? parseInt(checkedPenaltyRadio.value) : 0;
+        
+        // 保存设置到localStorage
+        saveSettings();
         
         // 确保最小值小于最大值
         if (settings.minValue >= settings.maxValue) {
@@ -1151,6 +1249,12 @@ document.addEventListener('DOMContentLoaded', function() {
             feedbackElement.className = 'text-center min-h-8 text-red-500 font-medium';
             // 添加到错题本
             addToWrongList(userAnswer, userAnswerHTML);
+            
+            // 错误惩罚：增加总题数
+            if (settings.wrongPenalty && settings.wrongPenalty > 0) {
+                totalQuestions += settings.wrongPenalty;
+                updateProgress();
+            }
         }
 
         submitBtn.classList.add('hidden');
@@ -1230,6 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function restartGame() {
         score = 0;
         currentQuestion = 0;
+        totalQuestions = 10;
         scoreElement.textContent = score;
         generateProblem();
         updateProgress();
@@ -1267,13 +1372,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 保存设置
     function saveSettings() {
-        // 此函数已不再使用，所有设置保存逻辑已移至floatingSaveSettingsBtn事件监听器
-        console.log('saveSettings函数已废弃，请使用浮动设置面板保存设置');
+        try {
+            const payload = {
+                minValue: settings.minValue,
+                maxValue: settings.maxValue,
+                resultMaxValue: settings.resultMaxValue,
+                minLength: settings.minLength,
+                maxLength: settings.maxLength,
+                allowNegative: settings.allowNegative,
+                allowRemainder: settings.allowRemainder,
+                wrongPenalty: settings.wrongPenalty,
+                typeAll: floatingTypeAll.checked,
+                typeSimple: settings.problemTypes.simple,
+                typeLong: settings.problemTypes.long,
+                typeBig: settings.problemTypes.big,
+                typeFraction: settings.problemTypes.fraction,
+                typeEquation: settings.problemTypes.equation,
+                typeStep: settings.problemTypes.step,
+                typeWrong: settings.problemTypes.wrong
+            };
+            localStorage.setItem('calculationSettings', JSON.stringify(payload));
+        } catch (e) {
+            console.error('保存设置失败:', e);
+        }
     }
 
     // 加载设置
     function loadSettings() {
-        // 只加载浮动设置面板的设置
+        // 从localStorage加载设置
+        try {
+            const savedSettings = localStorage.getItem('calculationSettings');
+            if (savedSettings) {
+                const loadedSettings = JSON.parse(savedSettings);
+                
+                // 更新设置对象
+                if (loadedSettings.minValue !== undefined) settings.minValue = parseInt(loadedSettings.minValue);
+                if (loadedSettings.maxValue !== undefined) settings.maxValue = parseInt(loadedSettings.maxValue);
+                if (loadedSettings.resultMaxValue !== undefined) settings.resultMaxValue = parseInt(loadedSettings.resultMaxValue);
+                if (loadedSettings.minLength !== undefined) settings.minLength = parseInt(loadedSettings.minLength);
+                if (loadedSettings.maxLength !== undefined) settings.maxLength = parseInt(loadedSettings.maxLength);
+                if (loadedSettings.allowNegative !== undefined) settings.allowNegative = loadedSettings.allowNegative;
+                if (loadedSettings.allowRemainder !== undefined) settings.allowRemainder = loadedSettings.allowRemainder;
+                if (loadedSettings.wrongPenalty !== undefined) settings.wrongPenalty = parseInt(loadedSettings.wrongPenalty) || 0;
+                
+                // 更新题型选择
+                if (loadedSettings.typeAll !== undefined) floatingTypeAll.checked = loadedSettings.typeAll;
+                if (loadedSettings.typeSimple !== undefined) settings.problemTypes.simple = loadedSettings.typeSimple;
+                if (loadedSettings.typeLong !== undefined) settings.problemTypes.long = loadedSettings.typeLong;
+                if (loadedSettings.typeBig !== undefined) settings.problemTypes.big = loadedSettings.typeBig;
+                if (loadedSettings.typeFraction !== undefined) settings.problemTypes.fraction = loadedSettings.typeFraction;
+                if (loadedSettings.typeEquation !== undefined) settings.problemTypes.equation = loadedSettings.typeEquation;
+                if (loadedSettings.typeStep !== undefined) settings.problemTypes.step = loadedSettings.typeStep;
+                if (loadedSettings.typeWrong !== undefined) settings.problemTypes.wrong = loadedSettings.typeWrong;
+            }
+        } catch (e) {
+            console.error('加载设置失败:', e);
+        }
+        
+        // 更新UI
         floatingMinValue.value = settings.minValue;
         floatingMaxValue.value = settings.maxValue;
         floatingResultMaxValue.value = settings.resultMaxValue;
@@ -1290,6 +1446,11 @@ document.addEventListener('DOMContentLoaded', function() {
         floatingTypeEquation.checked = settings.problemTypes.equation;
         floatingTypeStep.checked = settings.problemTypes.step;
         floatingTypeWrong.checked = settings.problemTypes.wrong;
+        
+        // 加载错误惩罚单选项
+        document.querySelectorAll('input[name="penaltyOption"]').forEach(r => {
+            r.checked = parseInt(r.value) === (settings.wrongPenalty || 0);
+        });
         
         // 更新全选按钮状态
         updateAllCheckboxState();
