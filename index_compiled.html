@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算小能手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen p-5">
+    <!-- 浮动错题本按钮 -->
+    <button id="floatingWrongBtn" class="floating-settings-btn bg-red-500 text-white hover:bg-red-600 transition-all" style="bottom: 140px;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span id="floatingWrongCount" class="absolute -top-1 -right-1 bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">0</span>
+    </button>
+    
+    <!-- 浮动排行榜按钮 -->
+    <button id="floatingLeaderboardBtn" class="floating-settings-btn bg-yellow-500 text-white hover:bg-yellow-600 transition-all" style="bottom: 80px;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+    </button>
+    
+    <!-- 浮动设置按钮 -->
+    <button id="floatingSettingsBtn" class="floating-settings-btn bg-purple-500 text-white hover:bg-purple-600 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    </button>
+    
+    <!-- 浮动错题本面板 -->
+    <div id="floatingWrongPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
+        <h3 class="font-bold text-lg text-center text-red-700 mb-3">错题本</h3>
+        <div id="floatingWrongList" class="max-h-60 overflow-y-auto">
+            <p class="text-center text-gray-500 italic">暂无错题</p>
+        </div>
+        <div class="text-center mt-3">
+            <button id="floatingClearWrongBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all">
+                清空错题本
+            </button>
+        </div>
+    </div>
+    
+    <!-- 浮动排行榜面板 -->
+    <div id="floatingLeaderboardPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
+        <h3 class="font-bold text-lg text-center text-yellow-700 mb-3">排行榜</h3>
+        <div class="mb-4">
+            <h4 class="font-semibold text-sm text-gray-700 mb-2">本次成绩</h4>
+            <div id="currentScore" class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div class="text-center text-gray-500 italic">暂无成绩</div>
+            </div>
+        </div>
+        <div>
+            <h4 class="font-semibold text-sm text-gray-700 mb-2">历史最快前10</h4>
+            <div id="leaderboardList" class="max-h-48 overflow-y-auto">
+                <div class="text-center text-gray-500 italic">暂无历史记录</div>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <button id="clearLeaderboardBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all">
+                清空记录
+            </button>
+        </div>
+    </div>
+    
+    <!-- 浮动设置面板 -->
+    <div id="floatingSettingsPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
+        <h3 class="font-bold text-lg text-center text-purple-700 mb-3">设置</h3>
+        <div id="settingsLockBar" class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">输入密码解锁设置（默认锁定）</label>
+            <div class="flex gap-2">
+                <input type="password" id="settingsPasswordInput" placeholder="输入密码" class="flex-1 py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <button id="settingsUnlockBtn" class="px-3 py-2 rounded-lg text-sm font-medium bg-purple-500 text-white hover:bg-purple-600">解锁</button>
+                <button id="settingsLockBtn" class="px-3 py-2 rounded-lg text-sm font-medium bg-gray-500 text-white hover:bg-gray-600 hidden">重新锁定</button>
+            </div>
+            <p id="settingsLockMsg" class="text-red-600 text-xs mt-1 hidden">密码错误，请重试</p>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">数字最小值</label>
+                <input type="number" id="floatingMinValue" value="0" min="0" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">数字最大值</label>
+                <input type="number" id="floatingMaxValue" value="10" min="1" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">结果最大值</label>
+                <input type="number" id="floatingResultMaxValue" value="100" min="1" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">长式子最短长度</label>
+                <input type="number" id="floatingMinLength" value="5" min="2" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">长式子最长长度</label>
+                <input type="number" id="floatingMaxLength" value="8" min="5" 
+                       class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <input type="checkbox" id="floatingAllowNegative" value="1" 
+                           class="w-5 h-5 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                    <span>允许出现负数</span>
+                </label>
+            </div>
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <input type="checkbox" id="floatingAllowRemainder" value="1" 
+                           class="w-5 h-5 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                    <span>允许除法有余数</span>
+                </label>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-3 mt-2">
+                <h4 class="font-medium text-gray-700 mb-2">题型选择</h4>
+                <div class="mb-2">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeAll" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>全选</span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeSimple" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>基础计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeLong" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>长式子</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeBig" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>大数计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeFraction" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>分式计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeEquation" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>方程计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeStep" value="1" checked 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>脱式计算</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeWrong" value="1" 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错题练习</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-3 mt-2">
+                <h4 class="font-medium text-gray-700 mb-2">错误惩罚</h4>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penaltyNone" value="0" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded" checked>
+                        <span>不罚</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penalty5" value="5" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错1罚5</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penalty10" value="10" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错1罚10</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="radio" name="penaltyOption" id="penalty20" value="20" class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>错1罚20</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <button id="floatingSaveSettingsBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="max-w-4xl mx-auto flex flex-col gap-5">
+        <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20">
+            <h1 class="text-3xl font-bold text-center bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-4">计算小能手</h1>
+            
+            <!-- 只保留进度和得分 -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg font-semibold text-gray-700">进度:</span>
+                    <span class="text-lg font-semibold text-blue-600" id="progress">0/10</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-lg font-semibold text-gray-700">得分:</span>
+                    <span class="text-lg font-semibold text-purple-600" id="score">0</span>
+                </div>
+            </div>
+            
+            <!-- 计时器显示 -->
+            <div class="flex justify-center items-center mb-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-600">总用时:</span>
+                    <span class="text-green-600 font-medium" id="totalTimer">0秒</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20 flex-grow flex flex-col">
+            <div class="text-center mb-6">
+                <div class="text-4xl font-bold text-gray-800 mb-2" id="problem"></div>
+                <div class="text-lg text-gray-500" id="problemType"></div>
+            </div>
+            
+            <div class="flex flex-col gap-4 flex-grow justify-center">
+                <!-- 普通输入框 -->
+                <input type="text" id="answer" placeholder="请输入答案" class="py-3 px-4 text-xl border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center">
+                
+                <!-- 分数输入区域 -->
+                <div id="fractionInput" class="hidden flex justify-center items-center gap-3">
+                    <div class="input-fraction">
+                        <input type="number" id="numerator" placeholder="分子" class="py-2 px-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <hr>
+                        <input type="number" id="denominator" placeholder="分母" class="py-2 px-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <span class="text-lg">或</span>
+                    <input type="text" id="fractionTextInput" placeholder="如：3/4" class="py-3 px-4 text-xl border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center w-40">
+                </div>
+                
+                <div class="text-center min-h-8" id="feedback"></div>
+                <button id="submitBtn" class="py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all font-medium">提交答案</button>
+                <button id="nextBtn" class="py-3 px-6 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xl rounded-xl hover:from-green-600 hover:to-teal-600 transition-all font-medium hidden">下一题</button>
+            </div>
+        </div>
+
+
+
+        <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20">
+            <div class="text-center">
+                <button id="restartBtn" class="py-3 px-8 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xl rounded-xl hover:from-orange-600 hover:to-red-600 transition-all font-medium">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学练习测试用例</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-result {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6">数学练习自动化测试</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">测试控制面板</h2>
+            <div class="flex gap-4 mb-4">
+                <button id="startTest" class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">开始测试</button>
+                <button id="stopTest" class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600" disabled>停止测试</button>
+                <button id="clearResults" class="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">清空结果</button>
+            </div>
+            <div class="flex gap-4 items-center">
+                <label class="flex items-center">
+                    <input type="checkbox" id="autoAnswer" checked class="mr-2">
+                    自动答题
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" id="testAllTypes" checked class="mr-2">
+                    测试所有题型
+                </label>
+                <label class="flex items-center">
+                    <span class="mr-2">测试轮数:</span>
+                    <input type="number" id="testRounds" value="3" min="1" max="10" class="border rounded px-2 py-1 w-16">
+                </label>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">测试进度</h2>
+            <div class="mb-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>测试进度</span>
+                    <span id="progressText">0/0</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="currentTest" class="text-sm text-gray-600">等待开始测试...</div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">测试结果</h2>
+            <div id="testResults" class="max-h-96 overflow-y-auto">
+                <div class="test-info">点击"开始测试"按钮开始自动化测试</div>
+            </div>
+        </div>
+
+        <!-- 隐藏的iframe用于加载被测试页面 -->
+        <iframe id="testFrame" src="index.html" style="display: none;"></iframe>
+    </div>
+
+    <script>
+        class MathTestSuite {
+            constructor() {
+                this.testFrame = document.getElementById('testFrame');
+                this.resultsContainer = document.getElementById('testResults');
+                this.progressBar = document.getElementById('progressBar');
+                this.progressText = document.getElementById('progressText');
+                this.currentTestElement = document.getElementById('currentTest');
+                
+                this.isRunning = false;
+                this.currentTestIndex = 0;
+                this.totalTests = 0;
+                this.passedTests = 0;
+                this.failedTests = 0;
+                
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                document.getElementById('startTest').addEventListener('click', () => this.startTest());
+                document.getElementById('stopTest').addEventListener('click', () => this.stopTest());
+                document.getElementById('clearResults').addEventListener('click', () => this.clearResults());
+            }
+
+            log(message, type = 'info') {
+                const div = document.createElement('div');
+                div.className = `test-result test-${type}`;
+                div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                this.resultsContainer.appendChild(div);
+                this.resultsContainer.scrollTop = this.resultsContainer.scrollHeight;
+            }
+
+            updateProgress() {
+                const progress = this.totalTests > 0 ? (this.currentTestIndex / this.totalTests) * 100 : 0;
+                this.progressBar.style.width = `${progress}%`;
+                this.progressText.textContent = `${this.currentTestIndex}/${this.totalTests}`;
+            }
+
+            async startTest() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.currentTestIndex = 0;
+                this.passedTests = 0;
+                this.failedTests = 0;
+                
+                document.getElementById('startTest').disabled = true;
+                document.getElementById('stopTest').disabled = false;
+                
+                this.log('开始自动化测试...', 'info');
+                
+                // 等待iframe加载完成
+                await this.waitForFrameLoad();
+                
+                const testRounds = parseInt(document.getElementById('testRounds').value) || 3;
+                const autoAnswer = document.getElementById('autoAnswer').checked;
+                const testAllTypes = document.getElementById('testAllTypes').checked;
+                
+                // 定义测试用例
+                const testCases = [
+                    { name: '页面加载测试', test: () => this.testPageLoad() },
+                    { name: '基础功能测试', test: () => this.testBasicFunctions() },
+                    { name: '题目生成测试', test: () => this.testProblemGeneration() },
+                    { name: '答案验证测试', test: () => this.testAnswerValidation() },
+                    { name: '计时器功能测试', test: () => this.testTimerFunctions() },
+                    { name: '分数统计测试', test: () => this.testScoreTracking() },
+                    { name: '设置面板测试', test: () => this.testSettingsPanel() },
+                    { name: '错题本功能测试', test: () => this.testWrongQuestions() },
+                ];
+                
+                if (autoAnswer) {
+                    for (let round = 1; round <= testRounds; round++) {
+                        testCases.push({
+                            name: `完整游戏流程测试 (第${round}轮)`,
+                            test: () => this.testCompleteGameFlow()
+                        });
+                    }
+                }
+                
+                this.totalTests = testCases.length;
+                
+                // 执行测试用例
+                for (const testCase of testCases) {
+                    if (!this.isRunning) break;
+                    
+                    this.currentTestElement.textContent = `正在执行: ${testCase.name}`;
+                    this.log(`开始执行: ${testCase.name}`, 'info');
+                    
+                    try {
+                        await testCase.test();
+                        this.passedTests++;
+                        this.log(`✓ ${testCase.name} - 通过`, 'pass');
+                    } catch (error) {
+                        this.failedTests++;
+                        this.log(`✗ ${testCase.name} - 失败: ${error.message}`, 'fail');
+                    }
+                    
+                    this.currentTestIndex++;
+                    this.updateProgress();
+                    
+                    // 测试间隔
+                    await this.sleep(500);
+                }
+                
+                this.finishTest();
+            }
+
+            stopTest() {
+                this.isRunning = false;
+                document.getElementById('startTest').disabled = false;
+                document.getElementById('stopTest').disabled = true;
+                this.currentTestElement.textContent = '测试已停止';
+                this.log('测试被用户停止', 'info');
+            }
+
+            clearResults() {
+                this.resultsContainer.innerHTML = '<div class="test-info">测试结果已清空</div>';
+                this.progressBar.style.width = '0%';
+                this.progressText.textContent = '0/0';
+                this.currentTestElement.textContent = '等待开始测试...';
+            }
+
+            finishTest() {
+                this.isRunning = false;
+                document.getElementById('startTest').disabled = false;
+                document.getElementById('stopTest').disabled = true;
+                this.currentTestElement.textContent = '测试完成';
+                
+                const totalTests = this.passedTests + this.failedTests;
+                const successRate = totalTests > 0 ? ((this.passedTests / totalTests) * 100).toFixed(1) : 0;
+                
+                this.log(`测试完成! 通过: ${this.passedTests}, 失败: ${this.failedTests}, 成功率: ${successRate}%`, 
+                         this.failedTests === 0 ? 'pass' : 'fail');
+            }
+
+            async waitForFrameLoad() {
+                return new Promise((resolve) => {
+                    if (this.testFrame.contentDocument && this.testFrame.contentDocument.readyState === 'complete') {
+                        resolve();
+                    } else {
+                        this.testFrame.onload = () => resolve();
+                    }
+                });
+            }
+
+            getFrameDocument() {
+                return this.testFrame.contentDocument || this.testFrame.contentWindow.document;
+            }
+
+            getFrameWindow() {
+                return this.testFrame.contentWindow;
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // 测试用例实现
+            async testPageLoad() {
+                const doc = this.getFrameDocument();
+                const win = this.getFrameWindow();
+                
+                if (!doc || !win) {
+                    throw new Error('无法访问测试页面');
+                }
+                
+                // 检查关键元素是否存在
+                const requiredElements = [
+                    'problem', 'answer', 'submitBtn', 'nextBtn', 'restartBtn',
+                    'score', 'totalTimer', 'progress'
+                ];
+                
+                for (const elementId of requiredElements) {
+                    const element = doc.getElementById(elementId);
+                    if (!element) {
+                        throw new Error(`关键元素 ${elementId} 未找到`);
+                    }
+                }
+                
+                // 检查是否有题目生成
+                const problemElement = doc.getElementById('problem');
+                if (!problemElement.textContent.trim()) {
+                    throw new Error('页面加载后未生成题目');
+                }
+            }
+
+            async testBasicFunctions() {
+                const doc = this.getFrameDocument();
+                const win = this.getFrameWindow();
+                
+                // 测试重新开始功能
+                const restartBtn = doc.getElementById('restartBtn');
+                const scoreElement = doc.getElementById('score');
+                const progressElement = doc.getElementById('progress');
+                
+                restartBtn.click();
+                await this.sleep(100);
+                
+                if (scoreElement.textContent !== '0') {
+                    throw new Error('重新开始后分数未重置');
+                }
+                
+                if (!progressElement.textContent.includes('1/10')) {
+                    throw new Error('重新开始后进度未重置');
+                }
+            }
+
+            async testProblemGeneration() {
+                const doc = this.getFrameDocument();
+                const problemElement = doc.getElementById('problem');
+                
+                const problems = new Set();
+                
+                // 生成多个题目检查是否有变化
+                for (let i = 0; i < 5; i++) {
+                    const restartBtn = doc.getElementById('restartBtn');
+                    restartBtn.click();
+                    await this.sleep(100);
+                    
+                    const problemText = problemElement.textContent.trim();
+                    if (!problemText || problemText === '游戏结束！你的得分是 0/10') {
+                        throw new Error(`第${i+1}次生成的题目为空或无效`);
+                    }
+                    
+                    problems.add(problemText);
+                }
+                
+                if (problems.size < 2) {
+                    throw new Error('题目生成缺乏随机性');
+                }
+            }
+
+            async testAnswerValidation() {
+                const doc = this.getFrameDocument();
+                const win = this.getFrameWindow();
+                
+                // 重新开始游戏
+                doc.getElementById('restartBtn').click();
+                await this.sleep(100);
+                
+                const problemElement = doc.getElementById('problem');
+                const answerInput = doc.getElementById('answer');
+                const submitBtn = doc.getElementById('submitBtn');
+                const feedbackElement = doc.querySelector('.text-center.min-h-8');
+                
+                const problemText = problemElement.textContent.trim();
+                
+                // 尝试解析简单的数学题目
+                let correctAnswer = null;
+                if (problemText.includes(' + ')) {
+                    const parts = problemText.split(' + ');
+                    if (parts.length === 2) {
+                        const a = parseInt(parts[0]);
+                        const b = parseInt(parts[1].replace(' = ?', ''));
+                        correctAnswer = a + b;
+                    }
+                } else if (problemText.includes(' - ')) {
+                    const parts = problemText.split(' - ');
+                    if (parts.length === 2) {
+                        const a = parseInt(parts[0]);
+                        const b = parseInt(parts[1].replace(' = ?', ''));
+                        correctAnswer = a - b;
+                    }
+                } else if (problemText.includes(' × ')) {
+                    const parts = problemText.split(' × ');
+                    if (parts.length === 2) {
+                        const a = parseInt(parts[0]);
+                        const b = parseInt(parts[1].replace(' = ?', ''));
+                        correctAnswer = a * b;
+                    }
+                }
+                
+                if (correctAnswer !== null) {
+                    // 测试正确答案
+                    answerInput.value = correctAnswer.toString();
+                    submitBtn.click();
+                    await this.sleep(200);
+                    
+                    if (!feedbackElement.textContent.includes('正确')) {
+                        throw new Error('正确答案未被识别');
+                    }
+                    
+                    // 进入下一题
+                    const nextBtn = doc.getElementById('nextBtn');
+                    nextBtn.click();
+                    await this.sleep(100);
+                    
+                    // 测试错误答案
+                    answerInput.value = (correctAnswer + 999).toString();
+                    submitBtn.click();
+                    await this.sleep(200);
+                    
+                    if (!feedbackElement.textContent.includes('错误')) {
+                        throw new Error('错误答案未被识别');
+                    }
+                }
+            }
+
+            async testTimerFunctions() {
+                const doc = this.getFrameDocument();
+                const timerElement = doc.getElementById('totalTimer');
+                
+                // 重新开始游戏启动计时器
+                doc.getElementById('restartBtn').click();
+                await this.sleep(100);
+                
+                const initialTime = timerElement.textContent;
+                await this.sleep(1500); // 等待1.5秒
+                const laterTime = timerElement.textContent;
+                
+                if (initialTime === laterTime) {
+                    throw new Error('计时器未正常工作');
+                }
+            }
+
+            async testScoreTracking() {
+                const doc = this.getFrameDocument();
+                const scoreElement = doc.getElementById('score');
+                
+                // 重新开始游戏
+                doc.getElementById('restartBtn').click();
+                await this.sleep(100);
+                
+                const initialScore = parseInt(scoreElement.textContent);
+                if (initialScore !== 0) {
+                    throw new Error('初始分数不为0');
+                }
+                
+                // 这里可以添加更多分数测试逻辑
+            }
+
+            async testSettingsPanel() {
+                const doc = this.getFrameDocument();
+                
+                // 检查设置按钮是否存在
+                const settingsBtn = doc.getElementById('floatingSettingsBtn');
+                if (!settingsBtn) {
+                    throw new Error('设置按钮未找到');
+                }
+                
+                // 点击设置按钮
+                settingsBtn.click();
+                await this.sleep(200);
+                
+                const settingsPanel = doc.getElementById('floatingSettingsPanel');
+                if (!settingsPanel || !settingsPanel.classList.contains('active')) {
+                    throw new Error('设置面板未正确打开');
+                }
+            }
+
+            async testWrongQuestions() {
+                const doc = this.getFrameDocument();
+                
+                // 检查错题本按钮是否存在
+                const wrongBtn = doc.getElementById('floatingWrongBtn');
+                if (!wrongBtn) {
+                    throw new Error('错题本按钮未找到');
+                }
+                
+                // 点击错题本按钮
+                wrongBtn.click();
+                await this.sleep(200);
+                
+                const wrongPanel = doc.getElementById('floatingWrongPanel');
+                if (!wrongPanel || !wrongPanel.classList.contains('active')) {
+                    throw new Error('错题本面板未正确打开');
+                }
+            }
+
+            async testCompleteGameFlow() {
+                const doc = this.getFrameDocument();
+                const win = this.getFrameWindow();
+                
+                // 重新开始游戏
+                doc.getElementById('restartBtn').click();
+                await this.sleep(500);
+                
+                const answerInput = doc.getElementById('answer');
+                const submitBtn = doc.getElementById('submitBtn');
+                const nextBtn = doc.getElementById('nextBtn');
+                const progressElement = doc.getElementById('progress');
+                
+                // 完成10道题目
+                for (let i = 1; i <= 10; i++) {
+                    if (!this.isRunning) break;
+                    
+                    // 等待题目完全加载
+                    await this.sleep(200);
+                    
+                    // 获取当前题目并尝试计算正确答案
+                    const problemElement = doc.getElementById('problem');
+                    const problemText = problemElement.textContent.trim();
+                    let correctAnswer = this.calculateAnswer(problemText);
+                    
+                    // 如果无法计算正确答案，使用随机答案
+                    if (correctAnswer === null) {
+                        correctAnswer = Math.floor(Math.random() * 100);
+                    }
+                    
+                    answerInput.value = correctAnswer.toString();
+                    
+                    // 提交答案
+                    submitBtn.click();
+                    await this.sleep(500);
+                    
+                    // 检查当前进度
+                    const currentProgress = progressElement.textContent;
+                    this.log(`第${i}题完成，进度: ${currentProgress}`, 'info');
+                    
+                    if (i < 10) {
+                        // 不是最后一题，点击下一题
+                        nextBtn.click();
+                        await this.sleep(500);
+                    } else {
+                        // 第10题，点击下一题后游戏应该结束
+                        this.log('第10题完成，点击下一题触发游戏结束', 'info');
+                        nextBtn.click();
+                        await this.sleep(1000); // 等待游戏结束处理
+                    }
+                }
+                
+                // 验证游戏是否正确结束
+                const problemElement = doc.getElementById('problem');
+                const problemText = problemElement.textContent.trim();
+                
+                this.log(`游戏结束检查，当前显示: "${problemText}"`, 'info');
+                
+                // 检查是否显示游戏结束信息
+                if (!problemText.includes('游戏结束！你的得分是')) {
+                    throw new Error(`游戏未正确结束，当前显示: "${problemText}"`);
+                }
+                
+                // 验证分数格式是否正确 (应该是 "x/10" 的格式)
+                const scoreMatch = problemText.match(/游戏结束！你的得分是 (\d+)\/10/);
+                if (!scoreMatch) {
+                    throw new Error(`游戏结束信息格式不正确: "${problemText}"`);
+                }
+                
+                const finalScore = parseInt(scoreMatch[1]);
+                if (finalScore < 0 || finalScore > 10) {
+                    throw new Error(`最终分数超出范围: ${finalScore}`);
+                }
+            }
+
+            // 辅助函数：尝试计算简单数学题的答案
+            calculateAnswer(problemText) {
+                try {
+                    // 移除 "= ?" 部分
+                    const expression = problemText.replace(/\s*=\s*\?.*$/, '').trim();
+                    
+                    // 处理加法
+                    if (expression.includes(' + ')) {
+                        const parts = expression.split(' + ');
+                        if (parts.length === 2) {
+                            const a = parseInt(parts[0]);
+                            const b = parseInt(parts[1]);
+                            if (!isNaN(a) && !isNaN(b)) {
+                                return a + b;
+                            }
+                        }
+                    }
+                    
+                    // 处理减法
+                    if (expression.includes(' - ')) {
+                        const parts = expression.split(' - ');
+                        if (parts.length === 2) {
+                            const a = parseInt(parts[0]);
+                            const b = parseInt(parts[1]);
+                            if (!isNaN(a) && !isNaN(b)) {
+                                return a - b;
+                            }
+                        }
+                    }
+                    
+                    // 处理乘法
+                    if (expression.includes(' × ')) {
+                        const parts = expression.split(' × ');
+                        if (parts.length === 2) {
+                            const a = parseInt(parts[0]);
+                            const b = parseInt(parts[1]);
+                            if (!isNaN(a) && !isNaN(b)) {
+                                return a * b;
+                            }
+                        }
+                    }
+                    
+                    // 处理除法
+                    if (expression.includes(' ÷ ')) {
+                        const parts = expression.split(' ÷ ');
+                        if (parts.length === 2) {
+                            const a = parseInt(parts[0]);
+                            const b = parseInt(parts[1]);
+                            if (!isNaN(a) && !isNaN(b) && b !== 0) {
+                                return Math.floor(a / b);
+                            }
+                        }
+                    }
+                    
+                    return null;
+                } catch (error) {
+                    return null;
+                }
+            }
+        }
+
+        // 初始化测试套件
+        const testSuite = new MathTestSuite();
+    </script>
+</body>
+</html>

@@ -88,11 +88,18 @@
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen p-5">
     <!-- 浮动错题本按钮 -->
-    <button id="floatingWrongBtn" class="floating-settings-btn bg-red-500 text-white hover:bg-red-600 transition-all" style="bottom: 80px;">
+    <button id="floatingWrongBtn" class="floating-settings-btn bg-red-500 text-white hover:bg-red-600 transition-all" style="bottom: 140px;">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <span id="floatingWrongCount" class="absolute -top-1 -right-1 bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">0</span>
+    </button>
+    
+    <!-- 浮动排行榜按钮 -->
+    <button id="floatingLeaderboardBtn" class="floating-settings-btn bg-yellow-500 text-white hover:bg-yellow-600 transition-all" style="bottom: 80px;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
     </button>
     
     <!-- 浮动设置按钮 -->
@@ -112,6 +119,28 @@
         <div class="text-center mt-3">
             <button id="floatingClearWrongBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all">
                 清空错题本
+            </button>
+        </div>
+    </div>
+    
+    <!-- 浮动排行榜面板 -->
+    <div id="floatingLeaderboardPanel" class="floating-settings-panel p-4" style="max-height: 400px; overflow-y: auto;">
+        <h3 class="font-bold text-lg text-center text-yellow-700 mb-3">排行榜</h3>
+        <div class="mb-4">
+            <h4 class="font-semibold text-sm text-gray-700 mb-2">本次成绩</h4>
+            <div id="currentScore" class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div class="text-center text-gray-500 italic">暂无成绩</div>
+            </div>
+        </div>
+        <div>
+            <h4 class="font-semibold text-sm text-gray-700 mb-2">历史最快前10</h4>
+            <div id="leaderboardList" class="max-h-48 overflow-y-auto">
+                <div class="text-center text-gray-500 italic">暂无历史记录</div>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <button id="clearLeaderboardBtn" class="px-4 py-2 rounded-full text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all">
+                清空记录
             </button>
         </div>
     </div>
@@ -262,6 +291,14 @@
                     <span class="text-lg font-semibold text-purple-600" id="score">0</span>
                 </div>
             </div>
+            
+            <!-- 计时器显示 -->
+            <div class="flex justify-center items-center mb-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-600">总用时:</span>
+                    <span class="text-green-600 font-medium" id="totalTimer">0秒</span>
+                </div>
+            </div>
         </div>
 
         <div class="bg-white/85 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/20 flex-grow flex flex-col">
@@ -314,6 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const restartBtn = document.getElementById('restartBtn');
     const progressElement = document.getElementById('progress');
     const scoreElement = document.getElementById('score');
+    const totalTimerElement = document.getElementById('totalTimer');
     const typeButtons = document.querySelectorAll('[data-type]');
     
     // 浮动设置面板相关元素
@@ -399,6 +437,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const floatingWrongCount = document.getElementById('floatingWrongCount');
     const floatingClearWrongBtn = document.getElementById('floatingClearWrongBtn');
     
+    // 排行榜相关元素
+    const floatingLeaderboardBtn = document.getElementById('floatingLeaderboardBtn');
+    const floatingLeaderboardPanel = document.getElementById('floatingLeaderboardPanel');
+    const currentScore = document.getElementById('currentScore');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
+    
     // 设置默认值
     let settings = {
         minValue: 0,
@@ -432,6 +477,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedType = 'all';
     let wrongQuestions = [];
     
+    // 计时相关变量
+    let gameStartTime = null;
+    let questionStartTime = null;
+    let currentSessionTimes = [];
+    let leaderboardData = [];
+    let totalTimerInterval = null;
+    
     // 从localStorage加载错题本数据
     try {
         const savedWrongQuestions = localStorage.getItem('wrongQuestions');
@@ -440,6 +492,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch (e) {
         console.error('加载错题本数据失败:', e);
+    }
+    
+    // 从localStorage加载排行榜数据
+    try {
+        const savedLeaderboard = localStorage.getItem('leaderboardData');
+        if (savedLeaderboard) {
+            leaderboardData = JSON.parse(savedLeaderboard);
+        }
+    } catch (e) {
+        console.error('加载排行榜数据失败:', e);
     }
 
     // 初始化
@@ -632,6 +694,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 生成题目
     function generateProblem() {
+        // 记录题目开始时间
+        questionStartTime = Date.now();
+        
         let problemHTML, answer, answerText, answerHTML, type;
         let attempts = 0; // 防止无限循环
 
@@ -1176,6 +1241,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 检查答案
     function checkAnswer() {
+        // 记录答题时间
+        const questionEndTime = Date.now();
+        const questionTime = questionEndTime - questionStartTime;
+        currentSessionTimes.push(questionTime);
+        
         let userAnswer = '';
         let userAnswerHTML = '';
         
@@ -1320,7 +1390,19 @@ document.addEventListener('DOMContentLoaded', function() {
             generateProblem();
             updateProgress();
         } else {
-            // 游戏结束
+            // 游戏结束，计算总时间并保存到排行榜
+            const gameEndTime = Date.now();
+            const totalTime = gameEndTime - gameStartTime;
+            const averageTime = currentSessionTimes.reduce((sum, time) => sum + time, 0) / currentSessionTimes.length;
+            
+            // 保存到排行榜
+            saveToLeaderboard(totalTime, averageTime, score, totalQuestions);
+            
+            // 停止所有计时器
+            if (totalTimerInterval) {
+                clearInterval(totalTimerInterval);
+            }
+            
             problemElement.textContent = `游戏结束！你的得分是 ${score}/${totalQuestions}`;
             problemTypeElement.textContent = score >= 7 ? '太棒了！继续努力！' : '加油！下次会更好！';
             answerInput.classList.add('hidden');
@@ -1335,6 +1417,19 @@ document.addEventListener('DOMContentLoaded', function() {
         score = 0;
         currentQuestion = 0;
         totalQuestions = 10;
+        
+        // 重置计时相关变量
+        gameStartTime = Date.now();
+        currentSessionTimes = [];
+        
+        // 清除之前的计时器
+        if (totalTimerInterval) {
+            clearInterval(totalTimerInterval);
+        }
+        
+        // 启动总计时器
+        totalTimerInterval = setInterval(updateTotalTimer, 100);
+        
         scoreElement.textContent = score;
         generateProblem();
         updateProgress();
@@ -1455,6 +1550,133 @@ document.addEventListener('DOMContentLoaded', function() {
         // 更新全选按钮状态
         updateAllCheckboxState();
     }
+    
+    // 保存到排行榜
+    function saveToLeaderboard(totalTime, averageTime, score, totalQuestions) {
+        const record = {
+            date: new Date().toLocaleString(),
+            totalTime: totalTime,
+            averageTime: Math.round(averageTime),
+            score: score,
+            totalQuestions: totalQuestions,
+            accuracy: Math.round((score / totalQuestions) * 100)
+        };
+        
+        leaderboardData.push(record);
+        
+        // 按总时间排序，保留前10名
+        leaderboardData.sort((a, b) => a.totalTime - b.totalTime);
+        if (leaderboardData.length > 10) {
+            leaderboardData = leaderboardData.slice(0, 10);
+        }
+        
+        // 保存到localStorage
+        localStorage.setItem('leaderboardData', JSON.stringify(leaderboardData));
+    }
+    
+    // 格式化时间显示
+    function formatTime(milliseconds) {
+        const seconds = Math.floor(milliseconds / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        if (minutes > 0) {
+            return `${minutes}分${remainingSeconds}秒`;
+        } else {
+            return `${remainingSeconds}秒`;
+        }
+    }
+    
+    // 更新排行榜显示
+    function updateLeaderboardDisplay() {
+        // 更新当前成绩
+        if (gameStartTime && currentSessionTimes.length > 0) {
+            const currentTotalTime = Date.now() - gameStartTime;
+            const currentAverageTime = currentSessionTimes.reduce((sum, time) => sum + time, 0) / currentSessionTimes.length;
+            
+            currentScore.innerHTML = `
+                <div class="text-sm">
+                    <div>总用时: ${formatTime(currentTotalTime)}</div>
+                    <div>平均每题: ${formatTime(currentAverageTime)}</div>
+                    <div>当前得分: ${score}/${totalQuestions}</div>
+                </div>
+            `;
+        } else {
+            currentScore.innerHTML = '<div class="text-sm text-gray-500">暂无当前成绩</div>';
+        }
+        
+        // 更新历史排行榜
+        if (leaderboardData.length === 0) {
+            leaderboardList.innerHTML = '<p class="text-center text-gray-500 italic">暂无历史记录</p>';
+            return;
+        }
+        
+        let html = '<div class="space-y-2">';
+        leaderboardData.forEach((record, index) => {
+            const rankClass = index === 0 ? 'text-yellow-600 font-bold' : 
+                             index === 1 ? 'text-gray-600 font-semibold' : 
+                             index === 2 ? 'text-orange-600 font-semibold' : 'text-gray-700';
+            
+            html += `
+                <div class="p-2 bg-white rounded border ${index < 3 ? 'border-yellow-300' : 'border-gray-200'}">
+                    <div class="flex justify-between items-center">
+                        <span class="${rankClass}">第${index + 1}名</span>
+                        <span class="text-sm text-gray-500">${record.date}</span>
+                    </div>
+                    <div class="text-sm mt-1">
+                        <div>总用时: ${formatTime(record.totalTime)}</div>
+                        <div>平均每题: ${formatTime(record.averageTime)}</div>
+                        <div>得分: ${record.score}/${record.totalQuestions} (${record.accuracy}%)</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        leaderboardList.innerHTML = html;
+    }
+    
+    // 排行榜按钮点击事件
+    floatingLeaderboardBtn.addEventListener('click', function() {
+        floatingLeaderboardPanel.classList.toggle('active');
+        floatingSettingsPanel.classList.remove('active');
+        floatingWrongPanel.classList.remove('active');
+        
+        // 更新排行榜显示
+        updateLeaderboardDisplay();
+    });
+    
+    // 清空排行榜按钮点击事件
+    clearLeaderboardBtn.addEventListener('click', function() {
+        if (confirm('确定要清空排行榜记录吗？')) {
+            leaderboardData = [];
+            localStorage.setItem('leaderboardData', JSON.stringify(leaderboardData));
+            updateLeaderboardDisplay();
+        }
+    });
+    
+    // 更新当前题目计时器
+    // 更新总计时器
+    function updateTotalTimer() {
+        if (gameStartTime) {
+            const totalTime = Date.now() - gameStartTime;
+            const minutes = Math.floor(totalTime / 60000);
+            const seconds = Math.floor((totalTime % 60000) / 1000);
+            
+            if (minutes > 0) {
+                totalTimerElement.textContent = `${minutes}分${seconds}秒`;
+            } else {
+                totalTimerElement.textContent = `${seconds}秒`;
+            }
+        }
+    }
+    
+    // 点击其他区域关闭排行榜面板
+    document.addEventListener('click', function(event) {
+        if (!floatingLeaderboardBtn.contains(event.target) && 
+            !floatingLeaderboardPanel.contains(event.target)) {
+            floatingLeaderboardPanel.classList.remove('active');
+        }
+    });
 });
 </script>
 </body>
