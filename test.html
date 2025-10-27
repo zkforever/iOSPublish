@@ -78,7 +78,7 @@
         </div>
 
         <!-- 隐藏的iframe用于加载被测试页面 -->
-        <iframe id="testFrame" src="index.html" style="display: none;"></iframe>
+        <iframe id="testFrame" src="about:blank" style="display: none;"></iframe>
     </div>
 
     <script>
@@ -132,57 +132,66 @@
                 
                 this.log('开始自动化测试...', 'info');
                 
-                // 等待iframe加载完成
-                await this.waitForFrameLoad();
-                
-                const testRounds = parseInt(document.getElementById('testRounds').value) || 3;
-                const autoAnswer = document.getElementById('autoAnswer').checked;
-                const testAllTypes = document.getElementById('testAllTypes').checked;
-                
-                // 定义测试用例
-                const testCases = [
-                    { name: '页面加载测试', test: () => this.testPageLoad() },
-                    { name: '基础功能测试', test: () => this.testBasicFunctions() },
-                    { name: '题目生成测试', test: () => this.testProblemGeneration() },
-                    { name: '答案验证测试', test: () => this.testAnswerValidation() },
-                    { name: '计时器功能测试', test: () => this.testTimerFunctions() },
-                    { name: '分数统计测试', test: () => this.testScoreTracking() },
-                    { name: '设置面板测试', test: () => this.testSettingsPanel() },
-                    { name: '错题本功能测试', test: () => this.testWrongQuestions() },
-                ];
-                
-                if (autoAnswer) {
-                    for (let round = 1; round <= testRounds; round++) {
-                        testCases.push({
-                            name: `完整游戏流程测试 (第${round}轮)`,
-                            test: () => this.testCompleteGameFlow()
-                        });
-                    }
-                }
-                
-                this.totalTests = testCases.length;
-                
-                // 执行测试用例
-                for (const testCase of testCases) {
-                    if (!this.isRunning) break;
+                try {
+                    // 等待iframe加载完成
+                    this.log('等待页面加载...', 'info');
+                    await this.waitForFrameLoad();
+                    this.log('页面加载完成', 'info');
                     
-                    this.currentTestElement.textContent = `正在执行: ${testCase.name}`;
-                    this.log(`开始执行: ${testCase.name}`, 'info');
+                    const testRounds = parseInt(document.getElementById('testRounds').value) || 3;
+                    const autoAnswer = document.getElementById('autoAnswer').checked;
+                    const testAllTypes = document.getElementById('testAllTypes').checked;
                     
-                    try {
-                        await testCase.test();
-                        this.passedTests++;
-                        this.log(`✓ ${testCase.name} - 通过`, 'pass');
-                    } catch (error) {
-                        this.failedTests++;
-                        this.log(`✗ ${testCase.name} - 失败: ${error.message}`, 'fail');
+                    // 定义测试用例
+                    const testCases = [
+                        { name: '页面加载测试', test: () => this.testPageLoad() },
+                        { name: '基础功能测试', test: () => this.testBasicFunctions() },
+                        { name: '题目生成测试', test: () => this.testProblemGeneration() },
+                        { name: '答案验证测试', test: () => this.testAnswerValidation() },
+                        { name: '计时器功能测试', test: () => this.testTimerFunctions() },
+                        { name: '分数统计测试', test: () => this.testScoreTracking() },
+                        { name: '设置面板测试', test: () => this.testSettingsPanel() },
+                        { name: '错题本功能测试', test: () => this.testWrongQuestions() },
+                        { name: '负数检查测试', test: () => this.testNegativeNumbers() },
+                    ];
+                    
+                    if (autoAnswer) {
+                        for (let round = 1; round <= testRounds; round++) {
+                            testCases.push({
+                                name: `完整游戏流程测试 (第${round}轮)`,
+                                test: () => this.testCompleteGameFlow()
+                            });
+                        }
                     }
                     
-                    this.currentTestIndex++;
+                    this.totalTests = testCases.length;
                     this.updateProgress();
                     
-                    // 测试间隔
-                    await this.sleep(500);
+                    // 执行测试用例
+                    for (const testCase of testCases) {
+                        if (!this.isRunning) break;
+                        
+                        this.currentTestElement.textContent = `正在执行: ${testCase.name}`;
+                        this.log(`开始执行: ${testCase.name}`, 'info');
+                        
+                        try {
+                            await testCase.test();
+                            this.passedTests++;
+                            this.log(`✓ ${testCase.name} - 通过`, 'pass');
+                        } catch (error) {
+                            this.failedTests++;
+                            this.log(`✗ ${testCase.name} - 失败: ${error.message}`, 'fail');
+                        }
+                        
+                        this.currentTestIndex++;
+                        this.updateProgress();
+                        
+                        // 测试间隔
+                        await this.sleep(500);
+                    }
+                    
+                } catch (error) {
+                    this.log(`测试启动失败: ${error.message}`, 'fail');
                 }
                 
                 this.finishTest();
@@ -217,12 +226,48 @@
             }
 
             async waitForFrameLoad() {
-                return new Promise((resolve) => {
-                    if (this.testFrame.contentDocument && this.testFrame.contentDocument.readyState === 'complete') {
-                        resolve();
-                    } else {
-                        this.testFrame.onload = () => resolve();
-                    }
+                return new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('iframe加载超时'));
+                    }, 15000); // 15秒超时
+                    
+                    // 先设置iframe的src
+                    this.testFrame.src = './index.html';
+                    
+                    const checkLoad = () => {
+                        try {
+                            const doc = this.testFrame.contentDocument;
+                            if (doc && doc.readyState === 'complete' && doc.body) {
+                                clearTimeout(timeout);
+                                // 额外等待一下确保页面完全加载
+                                setTimeout(() => resolve(), 1000);
+                                return true;
+                            }
+                        } catch (e) {
+                            // 跨域或其他访问错误
+                            console.log('检查iframe状态时出错:', e);
+                        }
+                        return false;
+                    };
+                    
+                    // 立即检查一次
+                    if (checkLoad()) return;
+                    
+                    // 设置加载事件监听
+                    this.testFrame.onload = () => {
+                        if (checkLoad()) return;
+                        // 如果onload触发但还没完全加载，继续等待
+                        setTimeout(() => {
+                            if (checkLoad()) return;
+                            clearTimeout(timeout);
+                            reject(new Error('iframe内容加载不完整'));
+                        }, 2000);
+                    };
+                    
+                    this.testFrame.onerror = () => {
+                        clearTimeout(timeout);
+                        reject(new Error('iframe加载失败'));
+                    };
                 });
             }
 
@@ -523,6 +568,65 @@
                 if (finalScore < 0 || finalScore > 10) {
                     throw new Error(`最终分数超出范围: ${finalScore}`);
                 }
+            }
+
+            // 负数检查测试
+            async testNegativeNumbers() {
+                const doc = this.getFrameDocument();
+                const win = this.getFrameWindow();
+                
+                // 重新开始游戏
+                doc.getElementById('restartBtn').click();
+                await this.sleep(500);
+                
+                const answerInput = doc.getElementById('answer');
+                const submitBtn = doc.getElementById('submitBtn');
+                const nextBtn = doc.getElementById('nextBtn');
+                const problemElement = doc.getElementById('problem');
+                
+                // 测试多种题目类型，检查是否会出现负数答案
+                const testCount = 1000; // 测试1000道题
+                let negativeFound = false;
+                let negativeProblems = [];
+                
+                for (let i = 0; i < testCount; i++) {
+                    if (!this.isRunning) break;
+                    
+                    // 等待题目加载
+                    await this.sleep(200);
+                    
+                    const problemText = problemElement.textContent.trim();
+                    
+                    // 尝试计算答案
+                    let calculatedAnswer = this.calculateAnswer(problemText);
+                    
+                    // 如果计算出的答案是负数，记录下来
+                    if (calculatedAnswer !== null && calculatedAnswer < 0) {
+                        negativeFound = true;
+                        negativeProblems.push({
+                            problem: problemText,
+                            answer: calculatedAnswer,
+                            index: i + 1
+                        });
+                        this.log(`发现负数答案: ${problemText} = ${calculatedAnswer}`, 'fail');
+                    }
+                    
+                    // 提交一个随机答案继续测试
+                    const randomAnswer = Math.floor(Math.random() * 100);
+                    answerInput.value = randomAnswer.toString();
+                    submitBtn.click();
+                    await this.sleep(300);
+                    
+                    // 点击下一题
+                    nextBtn.click();
+                    await this.sleep(300);
+                }
+                
+                if (negativeFound) {
+                    throw new Error(`发现 ${negativeProblems.length} 道题目的答案为负数: ${negativeProblems.map(p => `第${p.index}题: ${p.problem} = ${p.answer}`).join(', ')}`);
+                }
+                
+                this.log(`测试了 ${testCount} 道题目，未发现负数答案`, 'info');
             }
 
             // 辅助函数：尝试计算简单数学题的答案

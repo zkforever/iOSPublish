@@ -947,16 +947,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (valid && answer <= settings.resultMaxValue) {
-                // 构建题目字符串
-                problemHTML = '';
-                for(let i = 0; i < numbers.length; i++) {
-                    problemHTML += numbers[i];
-                    if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+                // 检查最终答案是否为负数
+                if (!settings.allowNegative && answer < 0) {
+                    valid = false;
+                } else {
+                    // 构建题目字符串
+                    problemHTML = '';
+                    for(let i = 0; i < numbers.length; i++) {
+                        problemHTML += numbers[i];
+                        if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+                    }
+                    problemHTML += ' = ?';
+                    type = '长式子计算';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
                 }
-                problemHTML += ' = ?';
-                type = '长式子计算';
-                answerText = answer.toString();
-                answerHTML = answerText;
             }
         } while (!problemHTML); // 确保有效题目
 
@@ -1159,18 +1164,39 @@ document.addEventListener('DOMContentLoaded', function() {
             // 确保方程有解且解为整数且不为零
             if (xCoefficient !== 0) {
                 answer = -constantTerm / xCoefficient;
+                // 检查答案是否有效：整数、在范围内、不为零、不为负数（如果不允许负数）
                 if (Number.isInteger(answer) && Math.abs(answer) <= settings.maxValue && Math.abs(answer) > 0) {
-                    break;
+                    // 如果不允许负数，确保答案为正
+                    if (!settings.allowNegative && answer < 0) {
+                        // 继续循环，重新生成
+                    } else {
+                        break;
+                    }
                 }
             }
             
             attempts++;
             if (attempts > 50) {
-                // 多次尝试失败后，生成简单方程
+                // 多次尝试失败后，生成简单方程，确保答案为正
                 const a = Math.floor(Math.random() * 5) + 1;
-                const b = a * (Math.floor(Math.random() * 5) + 1);
-                equationString = `${a}x - ${b}`;
-                answer = b / a;
+                let b = a * (Math.floor(Math.random() * 5) + 1);
+                
+                // 如果不允许负数，确保生成正数答案
+                if (!settings.allowNegative) {
+                    // 生成 ax - b = 0 形式，求解 x = b/a
+                    equationString = `${a}x - ${b}`;
+                    answer = b / a;  // 修复：对于 ax - b = 0，x = b/a
+                } else {
+                    // 允许负数时，可以生成 ax + b = 0 或 ax - b = 0
+                    const useSubtraction = Math.random() > 0.5;
+                    if (useSubtraction) {
+                        equationString = `${a}x - ${b}`;
+                        answer = b / a;  // 修复：对于 ax - b = 0，x = b/a
+                    } else {
+                        equationString = `${a}x + ${b}`;
+                        answer = -b / a; // 对于 ax + b = 0，x = -b/a
+                    }
+                }
                 break;
             }
         } while (true);
@@ -1223,16 +1249,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (valid && answer <= settings.resultMaxValue) {
-                // 构建题目字符串
-                problemHTML = '';
-                for(let i = 0; i < numbers.length; i++) {
-                    problemHTML += numbers[i];
-                    if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+                // 检查最终答案是否为负数
+                if (!settings.allowNegative && answer < 0) {
+                    valid = false;
+                } else {
+                    // 构建题目字符串
+                    problemHTML = '';
+                    for(let i = 0; i < numbers.length; i++) {
+                        problemHTML += numbers[i];
+                        if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+                    }
+                    problemHTML += ' = ?';
+                    type = '脱式计算';
+                    answerText = answer.toString();
+                    answerHTML = answerText;
                 }
-                problemHTML += ' = ?';
-                type = '脱式计算';
-                answerText = answer.toString();
-                answerHTML = answerText;
             }
         } while (!problemHTML); // 确保有效题目
 

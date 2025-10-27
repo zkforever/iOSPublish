@@ -676,7 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
             expression += ` ${ops[i]} ${numbers[i + 1]}`;
         }
         
-        // 计算结果（简单的从左到右计算）
+        // 计算结果（简单的从左到右计算）并检查中间结果
         let result = numbers[0];
         for (let i = 0; i < ops.length; i++) {
             switch (ops[i]) {
@@ -685,6 +685,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case '-':
                     result -= numbers[i + 1];
+                    // 检查中间结果是否为负数
+                    if (!allowNegative && result < 0) {
+                        return generateMixedOperation(); // 重新生成
+                    }
                     break;
                 case '×':
                     result *= numbers[i + 1];
@@ -692,6 +696,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 case '÷':
                     result = Math.floor(result / numbers[i + 1]);
                     break;
+            }
+            
+            // 检查中间结果是否超出范围
+            if (result > resultMaxValue) {
+                return generateMixedOperation(); // 重新生成
             }
         }
         
