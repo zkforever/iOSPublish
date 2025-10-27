@@ -243,6 +243,16 @@
                                class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
                         <span>错题练习</span>
                     </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeMultiplication" value="1" 
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>99乘法表</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="floatingTypeBigMultiplication" value="1" checked
+                               class="w-4 h-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                        <span>大99乘法表</span>
+                    </label>
                 </div>
             </div>
             
@@ -424,11 +434,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const floatingTypeEquation = document.getElementById('floatingTypeEquation');
     const floatingTypeStep = document.getElementById('floatingTypeStep');
     const floatingTypeWrong = document.getElementById('floatingTypeWrong');
+    const floatingTypeMultiplication = document.getElementById('floatingTypeMultiplication');
+    const floatingTypeBigMultiplication = document.getElementById('floatingTypeBigMultiplication');
     
     // 题型选择复选框数组
     const typeCheckboxes = [floatingTypeSimple, floatingTypeLong, floatingTypeBig, 
                            floatingTypeFraction, floatingTypeEquation, floatingTypeStep, 
-                           floatingTypeWrong];
+                           floatingTypeWrong, floatingTypeMultiplication, floatingTypeBigMultiplication];
     
     // 浮动错题本相关元素
     const floatingWrongBtn = document.getElementById('floatingWrongBtn');
@@ -461,7 +473,9 @@ document.addEventListener('DOMContentLoaded', function() {
             fraction: true,
             equation: true,
             step: true,
-            wrong: false
+            wrong: false,
+            multiplication: false,
+            bigMultiplication: true
         }
     };
 
@@ -556,6 +570,8 @@ document.addEventListener('DOMContentLoaded', function() {
         floatingTypeEquation.checked = settings.problemTypes.equation;
         floatingTypeStep.checked = settings.problemTypes.step;
         floatingTypeWrong.checked = settings.problemTypes.wrong;
+        floatingTypeMultiplication.checked = settings.problemTypes.multiplication;
+        floatingTypeBigMultiplication.checked = settings.problemTypes.bigMultiplication;
 
         // 同步错误惩罚选项
         document.querySelectorAll('input[name="penaltyOption"]').forEach(r => {
@@ -651,6 +667,8 @@ document.addEventListener('DOMContentLoaded', function() {
         settings.problemTypes.equation = floatingTypeEquation.checked;
         settings.problemTypes.step = floatingTypeStep.checked;
         settings.problemTypes.wrong = floatingTypeWrong.checked;
+        settings.problemTypes.multiplication = floatingTypeMultiplication.checked;
+        settings.problemTypes.bigMultiplication = floatingTypeBigMultiplication.checked;
         
         // 错误惩罚选项
         const checkedPenaltyRadio = document.querySelector('input[name="penaltyOption"]:checked');
@@ -675,7 +693,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!settings.problemTypes.simple && !settings.problemTypes.long && 
             !settings.problemTypes.big && !settings.problemTypes.fraction && 
             !settings.problemTypes.equation && !settings.problemTypes.step && 
-            !settings.problemTypes.wrong) {
+            !settings.problemTypes.wrong && !settings.problemTypes.multiplication && 
+            !settings.problemTypes.bigMultiplication) {
             alert('请至少选择一种题型！');
             settings.problemTypes.simple = true;
             floatingTypeSimple.checked = true;
@@ -740,6 +759,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (settings.problemTypes.equation) enabledTypes.push('equation');
                 if (settings.problemTypes.step) enabledTypes.push('step');
                 if (settings.problemTypes.wrong && wrongQuestions.length > 0) enabledTypes.push('wrong');
+                if (settings.problemTypes.multiplication) enabledTypes.push('multiplication');
+                if (settings.problemTypes.bigMultiplication) enabledTypes.push('bigMultiplication');
                 
                 // 如果没有启用任何题型，默认使用simple
                 if (enabledTypes.length === 0) {
@@ -756,6 +777,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     case 'equation': [problemHTML, answer, answerText, answerHTML, type] = generateEquationProblem(); isFractionProblem = false; break;
                     case 'step': [problemHTML, answer, answerText, answerHTML, type] = generateStepProblem(); isFractionProblem = false; break;
                     case 'wrong': [problemHTML, answer, answerText, answerHTML, type] = generateWrongProblem(); isFractionProblem = type.includes('分式'); break;
+                    case 'multiplication': [problemHTML, answer, answerText, answerHTML, type] = generateMultiplicationProblem(); isFractionProblem = false; break;
+                    case 'bigMultiplication': [problemHTML, answer, answerText, answerHTML, type] = generateBigMultiplicationProblem(); isFractionProblem = false; break;
                 }
             }
             attempts++;
@@ -1476,6 +1499,34 @@ document.addEventListener('DOMContentLoaded', function() {
         return b === 0 ? a : gcd(b, a % b);
     }
     
+    // 99乘法表（1-9 × 1-9）
+    function generateMultiplicationProblem() {
+        const a = Math.floor(Math.random() * 9) + 1; // 1-9
+        const b = Math.floor(Math.random() * 9) + 1; // 1-9
+        const answer = a * b;
+        
+        const problemHTML = `${a} × ${b} = ?`;
+        const type = '99乘法表';
+        const answerText = answer.toString();
+        const answerHTML = answerText;
+        
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+    
+    // 大99乘法表（1-19 × 1-19）
+    function generateBigMultiplicationProblem() {
+        const a = Math.floor(Math.random() * 19) + 1; // 1-19
+        const b = Math.floor(Math.random() * 19) + 1; // 1-19
+        const answer = a * b;
+        
+        const problemHTML = `${a} × ${b} = ?`;
+        const type = '大99乘法表';
+        const answerText = answer.toString();
+        const answerHTML = answerText;
+        
+        return [problemHTML, answer, answerText, answerHTML, type];
+    }
+    
     // 从错题本中随机生成题目
     function generateWrongProblem() {
         if (wrongQuestions.length === 0) {
@@ -1515,7 +1566,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 typeFraction: settings.problemTypes.fraction,
                 typeEquation: settings.problemTypes.equation,
                 typeStep: settings.problemTypes.step,
-                typeWrong: settings.problemTypes.wrong
+                typeWrong: settings.problemTypes.wrong,
+                typeMultiplication: settings.problemTypes.multiplication,
+                typeBigMultiplication: settings.problemTypes.bigMultiplication
             };
             localStorage.setItem('calculationSettings', JSON.stringify(payload));
         } catch (e) {
@@ -1550,6 +1603,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (loadedSettings.typeEquation !== undefined) settings.problemTypes.equation = loadedSettings.typeEquation;
                 if (loadedSettings.typeStep !== undefined) settings.problemTypes.step = loadedSettings.typeStep;
                 if (loadedSettings.typeWrong !== undefined) settings.problemTypes.wrong = loadedSettings.typeWrong;
+                if (loadedSettings.typeMultiplication !== undefined) settings.problemTypes.multiplication = loadedSettings.typeMultiplication;
+                if (loadedSettings.typeBigMultiplication !== undefined) settings.problemTypes.bigMultiplication = loadedSettings.typeBigMultiplication;
             }
         } catch (e) {
             console.error('加载设置失败:', e);
@@ -1572,6 +1627,8 @@ document.addEventListener('DOMContentLoaded', function() {
         floatingTypeEquation.checked = settings.problemTypes.equation;
         floatingTypeStep.checked = settings.problemTypes.step;
         floatingTypeWrong.checked = settings.problemTypes.wrong;
+        floatingTypeMultiplication.checked = settings.problemTypes.multiplication;
+        floatingTypeBigMultiplication.checked = settings.problemTypes.bigMultiplication;
         
         // 加载错误惩罚单选项
         document.querySelectorAll('input[name="penaltyOption"]').forEach(r => {
