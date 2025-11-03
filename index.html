@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return [problemHTML, answer, answerText, answerHTML, type];
     }
 
-    // 长式子计算
+    // 长式子计算（修复：遵循数学优先级并避免负数）
     function generateLongProblem() {
         const operations = ['+', '-', '×'];
         let numbers, ops, problemHTML, answer, type, answerText, answerHTML;
@@ -941,57 +941,71 @@ document.addEventListener('DOMContentLoaded', function() {
             numbers = [];
             ops = [];
             
-            for(let i = 0; i < length; i++) {
+            for (let i = 0; i < length; i++) {
                 numbers.push(getRandomNumber());
             }
-            
-            for(let i = 0; i < length - 1; i++) {
+            for (let i = 0; i < length - 1; i++) {
                 ops.push(operations[Math.floor(Math.random() * operations.length)]);
             }
-            
-            // 计算答案（按顺序计算，不考虑优先级）
-            answer = numbers[0];
+
+            // 构建题目字符串（用于展示）
+            problemHTML = '';
+            for (let i = 0; i < numbers.length; i++) {
+                problemHTML += numbers[i];
+                if (i < ops.length) problemHTML += ' ' + ops[i] + ' ';
+            }
+            problemHTML += ' = ?';
+            type = '长式子计算';
+
+            // 计算答案：遵循优先级（先乘后加减）
             let valid = true;
-            for(let i = 0; i < ops.length; i++) {
-                switch(ops[i]) {
-                    case '+': answer += numbers[i+1]; break;
-                    case '-': 
-                        answer -= numbers[i+1];
-                        if (!settings.allowNegative && answer < 0) valid = false;
-                        break;
-                    case '×': answer *= numbers[i+1]; break;
-                }
-                if (!valid) break;
-                // 检查中间结果是否超过最大值
-                if (answer > settings.resultMaxValue) {
-                    valid = false;
-                    break;
+            // 1) 先合并乘法项
+            const collapsedNumbers = [numbers[0]];
+            const collapsedOps = [];
+            for (let i = 0; i < ops.length; i++) {
+                const op = ops[i];
+                const next = numbers[i + 1];
+                if (op === '×') {
+                    collapsedNumbers[collapsedNumbers.length - 1] *= next;
+                    // 中间结果上限
+                    if (collapsedNumbers[collapsedNumbers.length - 1] > settings.resultMaxValue) { valid = false; break; }
+                } else {
+                    collapsedOps.push(op);
+                    collapsedNumbers.push(next);
                 }
             }
-            
-            if (valid && answer <= settings.resultMaxValue) {
-                // 检查最终答案是否为负数
-                if (!settings.allowNegative && answer < 0) {
-                    valid = false;
-                } else {
-                    // 构建题目字符串
-                    problemHTML = '';
-                    for(let i = 0; i < numbers.length; i++) {
-                        problemHTML += numbers[i];
-                        if(i < ops.length) problemHTML += ' ' + ops[i] + ' ';
-                    }
-                    problemHTML += ' = ?';
-                    type = '长式子计算';
-                    answerText = answer.toString();
-                    answerHTML = answerText;
+            if (!valid) { problemHTML = ''; continue; }
+
+            // 2) 再处理加减
+            answer = collapsedNumbers[0];
+            for (let i = 0; i < collapsedOps.length; i++) {
+                const op = collapsedOps[i];
+                const val = collapsedNumbers[i + 1];
+                if (op === '+') {
+                    answer += val;
+                } else if (op === '-') {
+                    answer -= val;
+                    if (!settings.allowNegative && answer < 0) { valid = false; break; }
                 }
+                if (answer > settings.resultMaxValue) { valid = false; break; }
+            }
+
+            // 3) 最终结果校验
+            if (!settings.allowNegative && answer < 0) { valid = false; }
+
+            if (!valid) {
+                // 重新生成题目
+                problemHTML = '';
+            } else {
+                answerText = answer.toString();
+                answerHTML = answerText;
             }
         } while (!problemHTML); // 确保有效题目
 
         return [problemHTML, answer, answerText, answerHTML, type];
     }
 
-    // 大数计算
+    // 大数计算（修复：严格避免负数并校验上限）
     function generateBigNumberProblem() {
         const operations = ['+', '-'];
         let op, a, b, answer, problemHTML, type, answerText, answerHTML;
@@ -1007,30 +1021,28 @@ document.addEventListener('DOMContentLoaded', function() {
             answerText = '';
             answerHTML = '';
 
-            switch(op) {
-                case '+':
-                    answer = a + b;
-                    // 检查结果是否超过最大值
-                    if (answer > settings.resultMaxValue) {
-                        answer = -1;
-                        break;
-                    }
+            if (op === '+') {
+                answer = a + b;
+                // 结果上限与非负校验
+                if (answer > settings.resultMaxValue) { answer = -1; }
+                if (!settings.allowNegative && answer < 0) { answer = -1; }
+                if (answer !== -1) {
                     problemHTML = `${a} + ${b} = ?`;
                     type = '大数加法';
                     answerText = answer.toString();
                     answerHTML = answerText;
-                    break;
-                case '-':
-                    answer = a - b;
-                    if (!settings.allowNegative && answer < 0) {
-                        answer = -1;
-                        break;
-                    }
+                }
+            } else { // '-'
+                answer = a - b;
+                // 非负校验与上限（上限用于对绝对值控制，防止异常大正数）
+                if (!settings.allowNegative && answer < 0) { answer = -1; }
+                if (Math.abs(answer) > settings.resultMaxValue) { answer = -1; }
+                if (answer !== -1) {
                     problemHTML = `${a} - ${b} = ?`;
                     type = '大数减法';
                     answerText = answer.toString();
                     answerHTML = answerText;
-                    break;
+                }
             }
         } while (answer === -1); // 确保有效题目
 
